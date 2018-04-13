@@ -13,7 +13,7 @@ from .post_process import PostProcess
 from .resolution import Resolution
 from .source import Source
 from .subtitle import Subtitle
-from .trim_frames import TrimFrames
+from .trim_frames import TrimFrames, TrimAudio
 from .unsharp_masking import UnsharpMasking
 from .upscale import Upscale
 
@@ -23,6 +23,8 @@ def makeTrimFrames(enabled, trim_frames):
         return
     return TrimFrames(trim_frames)
 
+def makeTrimAudio(enabled, temporary, ffmpeg, file, trim_frames):
+    return TrimAudio(enabled, temporary, ffmpeg, file, trim_frames)
 
 def makePostProcess(method, configure):
     if method is False:

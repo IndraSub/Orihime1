@@ -1,0 +1,270 @@
+#!/usr/bin/env python3
+
+from typing import List, Tuple, TypeVar
+import re
+import os
+import sys
+import logging
+import platform
+import importlib
+
+logger = logging.getLogger('tree_diagram')
+
+class Info:
+    def __getitem__(self, name):
+        return self.__dict__[name]
+    def __setitem__(self, name, value):
+        self.__dict__[name] = value
+    def __delitem__(self, name):
+        del self.__dict__[name]
+
+info = Info()
+info.binaries = {}
+
+def addPath(path: str) -> None:
+    if not os.path.isdir(path):
+        raise RuntimeError(f'addPath: {path} is not a directory')
+    os.environ['PATH'] = path + os.pathsep + os.environ['PATH']
+
+def addLibPath(path: str) -> None:
+    if info.system == 'Windows':
+        env_names = ['PATH']
+    else: # info.system == 'Linux'
+        env_names = ['LD_LIBRARY_PATH', 'WINEDLLPATH']
+    if not os.path.isdir(path):
+        raise RuntimeError(f'addLibPath: {path} is not a directory')
+    for env_name in env_names:
+        if env_name not in os.environ:
+            os.environ[env_name] = path
+        else:
+            os.environ[env_name] = path + os.pathsep + os.environ[env_name]
+
+def addPythonPath(path: str) -> None: # This one is appended after the current path
+    if not os.path.exists(path):
+        raise RuntimeError(f'addPythonPath: {path} is not found')
+    if 'PYTHONPATH' not in os.environ:
+        os.environ['PYTHONPATH'] = path
+    else:
+        os.environ['PYTHONPATH'] += os.pathsep + path
+    sys.path.append(path)
+
+def checkPython() -> None:
+    plat_info = platform.uname()
+    logger.info('PYTHON VERSION: {}'.format(sys.version.replace('\n', '')))
+    logger.info(f'PYTHON EXECUTABLE: {sys.executable}')
+    logger.info(f'SYSTEM: {plat_info.system}')
+    if plat_info.system == 'Windows':
+        release = plat_info.version
+    else:
+        release = plat_info.release
+    logger.info(f'RELEASE: {release}')
+    logger.info(f'MACHINE: {plat_info.machine}')
+
+    passed = True
+    if sys.version_info < (3, 6):
+        logger.error('Python version should be no less than 3.6')
+        passed = False
+    if plat_info.system not in ['Windows', 'Linux']:
+        logger.error('Unsupported operating system')
+        passed = False
+    if plat_info.machine not in ['i386', 'x86_64', 'AMD64']:
+        logger.error('Unsupported processor')
+        passed = False
+    if not passed:
+        exit(-1)
+    info.system = plat_info.system
+    info.PYTHON = sys.executable
+
+def setRootDirectory() -> None:
+    script_path = os.path.realpath(__file__)
+    script_directory = os.path.dirname(script_path)
+    info.root_directory = os.path.abspath(os.path.join(script_directory, '..', '..', '..'))
+
+def assertModulesInstalled(names: List[str]) -> None:
+    not_found = []
+    for name in names:
+        if importlib.util.find_spec(name) is None:
+            not_found.append(name)
+    if len(not_found) > 0:
+        logger.critical(f'Modules not found: {", ".join(not_found)}')
+        exit(-1)
+
+def findExecutable(filename: str, shorthand=None) -> str:
+    filepath = None
+    paths = os.environ['PATH'].split(os.pathsep)
+    if info.system == 'Windows':
+        paths = [os.getcwd()] + paths
+
+    for path in paths:
+        file_test = os.path.join(path, filename)
+        if os.path.exists(file_test) and os.path.isfile(file_test) and os.access(file_test, os.X_OK):
+            filepath = file_test
+            break
+
+    if shorthand is None:
+        shorthand = os.path.basename(filename).upper()
+        if info.system == 'Windows':
+            # remove extensions
+            exts = os.environ['PATHEXT'].split(os.pathsep)
+            ext = list(filter(lambda ext: shorthand.endswith(ext.upper()), exts))
+            if ext:
+                shorthand = shorthand[:-len(ext[0])]
+
+    shorthand = shorthand.upper()
+    shorthand = re.sub(r'[^A-Z0-9]', '_', shorthand)
+    if shorthand[0] in [str(i) for i in range(0,10)]:
+        shorthand = '_' + shorthand
+    if isinstance(shorthand, str):
+        info[shorthand] = filepath
+
+    logger.info(f'{shorthand} EXECUTABLE: {filepath}')
+    return filepath
+
+def loadBinaryInfo(filename: str):
+    fileinfo = {}
+    with open(filename, 'rb') as f:
+        head = f.read(4)
+        if head == b'\x7fELF':
+            fileformat = 'ELF'
+        elif head[:2] == b'MZ':
+            fileformat = 'PE'
+        else:
+            fileformat = 'unknown'
+    fileinfo['fileformat'] = fileformat
+    if fileformat == 'ELF':
+        from elftools.elf.elffile import ELFFile
+        from elftools.elf.dynamic import DynamicSection
+        with open(filename, 'rb') as f:
+            elf = ELFFile(f)
+            if elf.header.e_type == 'ET_EXEC':
+                filetype = 'executable'
+            elif elf.header.e_type == 'ET_DYN':
+                if elf.get_section_by_name('.interp'):
+                    filetype = 'executable'
+                else:
+                    filetype = 'library'
+            else:
+                filetype = 'unknown'
+            dependencies = []
+            rpath = []
+            runpath = []
+            dynamic = elf.get_section_by_name('.dynamic')
+            if dynamic:
+                for tag in dynamic.iter_tags():
+                    if tag.entry.d_tag == 'DT_NEEDED':
+                        dependencies.append(tag.needed)
+                    elif tag.entry.d_tag == 'DT_RPATH':
+                        rpath.append(tag.rpath)
+                    elif tag.entry.d_tag == 'DT_RUNPATH':
+                        runpath.append(tag.runpath)
+            fileinfo['dependencies'] = dependencies
+            fileinfo['rpath'] = rpath
+            fileinfo['runpath'] = runpath
+            exports = []
+            dynsym = elf.get_section_by_name('.dynsym')
+            if dynsym:
+                for symbol in dynsym.iter_symbols():
+                    if symbol.st_shndx != 'SHN_UNDEF':
+                        exports.append(symbol.name)
+            fileinfo['exports'] = exports
+    elif fileformat == 'PE':
+        from pefile import PE
+        pe = PE(filename, fast_load=True)
+        try:
+            pe.parse_data_directories()
+            if pe.is_exe():
+                filetype = 'executable'
+            elif pe.is_dll():
+                filetype = 'library'
+            else:
+                filetype = 'unknown'
+            fileinfo['filetype'] = filetype
+            dependencies = []
+            if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
+                for entry in pe.DIRECTORY_ENTRY_IMPORT:
+                    dependencies.append(entry.dll.decode())
+            if hasattr(pe, 'DIRECTORY_ENTRY_DELAY_IMPORT'):
+                for entry in pe.DIRECTORY_ENTRY_DELAY_IMPORT:
+                    dependencies.append(entry.dll.decode())
+            fileinfo['dependencies'] = dependencies
+            exports = []
+            if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
+                for symbol in pe.DIRECTORY_ENTRY_EXPORT:
+                    exports.append(symbol.name.decode())
+            fileinfo['exports'] = exports
+        finally:
+            pe.close()
+    info.binaries[filename] = fileinfo
+
+def checkDependency(filename: str):
+    if filename not in info.binaries:
+        loadBinaryInfo(filename)
+    import yaml
+    logger.debug(yaml.dump(info.binaries[filename], default_flow_style=False))
+
+ExecDescription = TypeVar('ExecDescription', Tuple[str, bool, str], Tuple[str, bool])
+def checkExecutables(executables: List[ExecDescription]) -> None:
+    not_found = []
+    for exe in executables:
+        shorthand = exe[2] if len(exe) > 2 else None
+        filepath = findExecutable(exe[0], shorthand)
+        if exe[1] and filepath is None:
+            not_found.append(exe[0])
+        else:
+            checkDependency(filepath)
+    if len(not_found) > 0:
+        logger.critical(f'Executables not found: {", ".join(not_found)}')
+        exit(-1)
+
+def precheck() -> None:
+    logging.basicConfig(level=logging.DEBUG, format='%(message)s')
+    checkPython()
+    setRootDirectory()
+
+    addPath(os.path.join(info.root_directory, 'bin', info.system.lower()))
+    addLibPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib'))
+    addPythonPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib', 'python'))
+
+    required_modules = [
+        'yaml',              # PyYAML
+        'pydub',             # pydub
+        'pefile',            # pefile
+    ]
+    if info.system == 'Windows':
+        required_modules += [
+            'clr',           # pythonnet
+        ]
+    else:
+        required_modules += [
+            'fontconfig',    # Python-fontconfig
+            'elftools',      # pyelftools
+        ]
+    assertModulesInstalled(required_modules)
+
+    if info.system == 'Windows':
+        executables = [
+            # filename, required[, shorthand]
+            ('vspipe.exe', True),
+            ('ffmpeg.exe', True),
+            ('mediainfo.exe', True),
+            ('x264_7mod_64-8bit.exe', False, 'x264'),
+            ('x264_7mod_64-10bit.exe', False, 'x264_10bit'),
+            ('x265-misaka-8bit.exe', False, 'x265'),
+            ('x265-misaka-10bit.exe', False, 'x265_10bit'),
+            ('mkvmerge.exe', True),
+            ('mkvpropedit.exe', True),
+            ('qaac64.exe', True, 'qaac'),
+        ]
+    else:
+        executables = [
+            ('wine', True),
+            ('vspipe', True),
+            ('ffmpeg', True),
+            ('mediainfo', True),
+            ('x264', False),
+            ('x265', False),
+            ('mkvmerge', True),
+            ('mkvpropedit', True),
+            ('qaac64.exe', True, 'qaac'),
+        ]
+    checkExecutables(executables)

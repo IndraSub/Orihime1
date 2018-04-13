@@ -1,6 +1,8 @@
 @ECHO OFF
 CHCP 65001
 MODE CON COLS=127
+PUSHD %~dp0
 TITLE INDRA Rip Tools
-PowerShell -ExecutionPolicy Unrestricted .\%~n0.ps1
+python -m conf.libraries.tree_diagram
+POPD
 PAUSE

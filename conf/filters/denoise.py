@@ -29,6 +29,26 @@ def SMDegrain(core, clip):
     return rep16
 
 
+def SMDegrainFast(core, clip):
+    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
+    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
+    dei16 = mvf.Depth(clip, depth=16, fulls=True)
+    den16 = haf.SMDegrain(
+        dei16,
+        tr=2,
+        blksize=32,
+        overlap=16,
+        prefilter=2,
+        contrasharp=30,
+        RefineMotion=True,
+        pel=1,
+        truemotion=True,
+        hpad=0,
+        vpad=0, )
+    rep16 = core.rgvs.Repair(den16, dei16, mode=1)
+    return rep16
+
+
 def BM3D(core, clip, strength, radius, profile):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
@@ -122,6 +142,7 @@ def MisakaDenoise(core, clip, v_strength, v_nsteps, v_csp, b_strength, b_radius,
 
 
 methods = {
+    'SMDegrainFast': SMDegrainFast,
     'SMDegrain': SMDegrain,
     'BM3D': BM3D,
     'Waifu2xCaffe': Waifu2xCaffe,

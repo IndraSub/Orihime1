@@ -1,31 +1,26 @@
-# v1.1
+# TreeDiagram
 
-### This is an archive
+### Welcome to the TreeDiagram branch!
 
-This branch is an archive of a stable release version.
+This branch is aimed to create a Linux-compatible version of Orihime1.
 
-### Version highlights
+### TODOs
 
-- Support newest version of Windows (Windows 10 1803)
-- Complete filter function support
-- Basically stable
-- Relatively simple deployment
-
-### Major changes
-
-- Change process flow sequence (IVTC and trim)
+- Translate all PowerShell scripts to Python
+- Use a more flexible method to load filter libraries
+- Support setting Vapoursynth's thread & max_cache_size automatically based on device's CPU thread & physical memory size
 
 ------
 
-# Orihime1-Core
+# Orihime1
 
-*This project has renamed from Worker-Core to Orihime1-Core.*
+*This repository has renamed from Orihime1-Core to Orihime1.*
 
-**Orihime1-Core is the worker part of Orihime1.**
+**Orihime1 is the worker part of Orihime1 Project.**
 
-The name of this project is originated from *Orihime 1 (おりひめ1号, Orihime Ichi-gō)*, the satellite which loads the super computer *Tree Diagram (樹形図の設計者, Jukeizu no Sekkeisha)*, in Japanese light novel and TV anime series *A Certain Magical Index (とある魔術の禁書目録, Toaru Majutsu no Indekkusu)*.
+The name of this project is originated from *Orihime-1 (おりひめ1号, Orihime Ichi-gō)*, the satellite which loads the super computer *Tree Diagram (樹形図の設計者, Jukeizu no Sekkeisha)*, in Japanese light novel and TV anime series *A Certain Magical Index (とある魔術の禁書目録, Toaru Majutsu no Indekkusu)*.
 
-**The aim of Orihime1 project is to build an automated, configurable, multi-propose video processing toolchain based on open source components.**
+**The aim of Orihime1 Project is to build an cross-platform, automated, configurable, multi-propose video processing toolchain based on open source components.**
 
 This project is currently experimental, the project configuration format may change frequently. **Do NOT use in production environments.**
 

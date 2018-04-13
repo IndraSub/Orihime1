@@ -89,7 +89,7 @@ function PostProcessVideo([string] $output){
 function BuildTrimmedScript($frames){
     $trimmedCode = 'last'
     if ($frames.Count -gt 0){
-        $trimmedCode = ($frames | ForEach-Object { "Trim($([int]($_[0] / 4 * 5)), $([int]($_[1] / 4 * 5)))" }) -join ' + '
+        $trimmedCode = ($frames | ForEach-Object { "Trim($($_[0]), $($_[1]))" }) -join ' + '
     }
     $parameters = @{
         LSMASHSource64PluginPath = "$PSScriptRoot\bin\filter_plugins\avs\LSMASHSource64.dll";

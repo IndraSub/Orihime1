@@ -30,7 +30,7 @@ def make_tasks(configure):
                          makeDeband, makeCropBefore, makeCropAfter,
                          makeDelogo, makeDenoise, makeUpscale,
                          makeUnsharpMasking, makeEnabled, makeFormat, makeMCFI,
-                         makePostProcess, makeResolution, makeSubtitle, makeTrimFrames)
+                         makePostProcess, makeResolution, makeSubtitle, makeTrimFrames, makeTrimAudio)
 
     source = configure['source']
     flow = configure['project']['flow']
@@ -41,10 +41,11 @@ def make_tasks(configure):
         filter_conf.get(name, {}), )
     return (
         Source(source['filename'], *makeArgs('Source')),
+        makeTrimAudio(flow.get('TrimFrames', False), temporary.decode(), ffmpeg.decode(), source['filename'], trim_frames),
         makePostProcess(*makeArgs('PostProcess')),
         makeTrimFrames(flow.get('TrimFrames', False), trim_frames),
-        makeDelogo(trim_frames, *makeArgs('Delogo')),
         makeCropBefore(*makeArgs('CropBefore')),
+        makeDelogo(trim_frames, *makeArgs('Delogo')),
         makeDenoise(*makeArgs('Denoise')),
         makeUpscale(*makeArgs('Upscale')),
         makeUnsharpMasking(*makeArgs('UnsharpMasking')),

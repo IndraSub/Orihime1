@@ -1,5 +1,9 @@
 # Workflow
 
+### NOTICE
+
+**The content of this document is outdated, please just ignore it.**
+
 ## Preload
 
 Load current-working.txt

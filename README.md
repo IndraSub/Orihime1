@@ -4,17 +4,16 @@
 
 This branch is aimed to create a Linux-compatible version of Orihime1.
 
-### TODOs
+### Main Features
 
-- Translate all PowerShell scripts to Python
-- Use a more flexible method to load filter libraries
-- Support setting Vapoursynth's thread & max_cache_size automatically based on device's CPU thread & physical memory size
+- All scripts in written in Python, friendly to deploy and maintenance.
+- Use a flexible method to load filter libraries - from binaries pack or system PATHs.
+- Completely deprecated AviSynth, thank you and R.I.P.!
+- Replace more components with Linux-compatible alternates.
 
 ------
 
 # Orihime1
-
-*This repository has renamed from Orihime1-Core to Orihime1.*
 
 **Orihime1 is the worker part of Orihime1 Project.**
 
@@ -32,14 +31,20 @@ See [docs/Requirements.md](docs/Requirements.md) for details.
 
 ### Deploy
 
-See [docs/Deploy.md](docs/Deploy.md) for details. *(Written in Simplified Chinese)*
+See [docs/Deploy-Linux.md](docs/Deploy-Linux.md) for details of deploy on GNU/Linux distributions.
+
+See [docs/Deploy-Windows.md](docs/Deploy-Windows.md) for details of deploy on Microsoft Windows.
 
 ### Configuration
 
-See [docs/Configuration.md](docs/Configuration.md) for details. *(Written in Simplified Chinese)*
+See [docs/Configuration.md](docs/Configuration.md) for details.
 
 ## License
 
+### License of the source
+
 This project is **closed source** at the moment. Publication of any part of the source code is strictly prohibited. Do NOT distribute copy, snippet or screenshot of the source code to any person who does not have access to this repository.
 
-Code and binaries in `bin` and `conf\libraries` are retrieved or generated from open source projects and are not affected by the above limitations. You can use and distribute them under their licenses.
+### License of distributed binary files
+
+Distributed code and binaries in `bin` are retrieved or generated from open source projects and are not affected by the above limitations. You can use and distribute them under their licenses.

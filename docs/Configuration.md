@@ -2,7 +2,7 @@
 
 待编辑
 
-请参考 `episodes\example` 中的 `.yaml` 文件
+具体格式请见示例任务包 (`episodes\example`)
 
 `.project.yaml` 为项目配置文件，统一设定项目的处理参数；其他 `.yaml` 文件为分集配置文件，设定每集的标题和输入输出文件等
 
@@ -11,5 +11,6 @@
 ## 使用
 
 - 将 __文件夹形式的任务包__ 放置在 `episodes` 目录下
-- 在 `episodes` 目录下创建 `current-working.txt` 文件，在其中写入要执行的任务配置文件的相对路径 (如 `example\CM0001.yaml`)
-- 运行 `media.bat` 启动任务流程并按提示操作
+- 在 `episodes` 目录下创建 `current-working.yaml` 文件，在其中写入要执行的任务配置文件的相对路径 (如 `example\CM0001.yaml`)，具体格式请见示例任务包
+- 运行 `media.bat` 或 `media.sh` 启动任务流程并按提示操作
+

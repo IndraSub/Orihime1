@@ -1,0 +1,4 @@
+bin/**
+episodes/**
+**/__pycache__
+conf/cudnn_data/**

@@ -210,8 +210,7 @@ def loadBinaryInfo(filename: str):
 wine_paths = None
 windir = None
 def resolveDependency(filename: str) -> None:
-    global wine_paths
-    global windir
+    global wine_paths, windir
     if filename not in info.binaries:
         loadBinaryInfo(filename)
     fileinfo = info.binaries[filename]
@@ -282,7 +281,7 @@ def queryDependency(filepath: str, debug=False, circular=set()) -> List[str]:
     if info.system == 'Windows':
         if filepath.lower().startswith(windir.lower() + '\\'):
             return []
-    else:
+    elif windir:
         if filepath.startswith(windir + '/'):
             return []
     if filepath not in info.binaries:
@@ -329,21 +328,22 @@ def checkExecutables(executables: List[ExecDescription]) -> None:
         exit(-1)
 
 def precheck() -> None:
+    global windir
     logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     checkPython()
     setRootDirectory()
+
     if info.system == 'Linux':
         checkExecutables([('wine', True), ('winepath', True)])
-
-    if windir is None:
-        if info.system == 'Windows':
-            windir = os.environ['WINDIR']
-        else:
-            windir = subprocess.check_output([info.WINEPATH, '-u', r'C:\windows']).decode().strip()
 
     addPath(os.path.join(info.root_directory, 'bin', info.system.lower()))
     addLibPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib'))
     addPythonPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib', 'python'))
+
+    if info.system == 'Windows':
+        windir = os.environ['WINDIR']
+    else:
+        windir = subprocess.check_output([info.WINEPATH, '-u', r'C:\windows']).decode().strip()
 
     required_modules = [
         'yaml',              # PyYAML

@@ -7,6 +7,9 @@ import sys
 import logging
 import platform
 import importlib
+import string
+import subprocess
+
 
 logger = logging.getLogger('tree_diagram')
 
@@ -28,16 +31,17 @@ def addPath(path: str) -> None:
 
 def addLibPath(path: str) -> None:
     if info.system == 'Windows':
-        env_names = ['PATH']
+        os.environ['PATH'] = path + os.pathsep + os.environ['PATH']
     else: # info.system == 'Linux'
-        env_names = ['LD_LIBRARY_PATH', 'WINEDLLPATH']
-    if not os.path.isdir(path):
-        raise RuntimeError(f'addLibPath: {path} is not a directory')
-    for env_name in env_names:
-        if env_name not in os.environ:
-            os.environ[env_name] = path
+        if 'LD_LIBRARY_PATH' not in os.environ:
+            os.environ['LD_LIBRARY_PATH'] = path
         else:
-            os.environ[env_name] = path + os.pathsep + os.environ[env_name]
+            os.environ['LD_LIBRARY_PATH'] = path + os.pathsep + os.environ['LD_LIBRARY_PATH']
+        winpath = subprocess.check_output([info.WINEPATH, '-w', path]).decode().strip()
+        if 'WINEPATH' not in os.environ:
+            os.environ['WINEPATH'] = path
+        else:
+            os.environ['WINEPATH'] = path + os.pathsep + os.environ['WINEPATH']
 
 def addPythonPath(path: str) -> None: # This one is appended after the current path
     if not os.path.exists(path):
@@ -100,6 +104,8 @@ def findExecutable(filename: str, shorthand=None) -> str:
         if os.path.exists(file_test) and os.path.isfile(file_test) and os.access(file_test, os.X_OK):
             filepath = file_test
             break
+    if filepath:
+        filepath = os.path.realpath(filepath)
 
     if shorthand is None:
         shorthand = os.path.basename(filename).upper()
@@ -145,6 +151,8 @@ def loadBinaryInfo(filename: str):
                     filetype = 'library'
             else:
                 filetype = 'unknown'
+            fileinfo['filetype'] = filetype
+            fileinfo['bits'] = elf.elfclass
             dependencies = []
             rpath = []
             runpath = []
@@ -164,7 +172,7 @@ def loadBinaryInfo(filename: str):
             dynsym = elf.get_section_by_name('.dynsym')
             if dynsym:
                 for symbol in dynsym.iter_symbols():
-                    if symbol.st_shndx != 'SHN_UNDEF':
+                    if symbol.entry.st_shndx != 'SHN_UNDEF':
                         exports.append(symbol.name)
             fileinfo['exports'] = exports
     elif fileformat == 'PE':
@@ -179,6 +187,8 @@ def loadBinaryInfo(filename: str):
             else:
                 filetype = 'unknown'
             fileinfo['filetype'] = filetype
+            # https://msdn.microsoft.com/en-us/library/windows/desktop/ms680313(v=vs.85).aspx
+            fileinfo['bits'] = 32 if pe.FILE_HEADER.Machine == 0x014c else 64
             dependencies = []
             if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
                 for entry in pe.DIRECTORY_ENTRY_IMPORT:
@@ -189,18 +199,116 @@ def loadBinaryInfo(filename: str):
             fileinfo['dependencies'] = dependencies
             exports = []
             if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
-                for symbol in pe.DIRECTORY_ENTRY_EXPORT:
-                    exports.append(symbol.name.decode())
+                for symbol in pe.DIRECTORY_ENTRY_EXPORT.symbols:
+                    if symbol.name:
+                        exports.append(symbol.name.decode())
             fileinfo['exports'] = exports
         finally:
             pe.close()
     info.binaries[filename] = fileinfo
 
-def checkDependency(filename: str):
+wine_paths = None
+windir = None
+def resolveDependency(filename: str) -> None:
+    global wine_paths
+    global windir
     if filename not in info.binaries:
         loadBinaryInfo(filename)
-    import yaml
-    logger.debug(yaml.dump(info.binaries[filename], default_flow_style=False))
+    fileinfo = info.binaries[filename]
+    if 'dependencies_link' in fileinfo:
+        return
+    if fileinfo['fileformat'] != 'PE' and fileinfo['fileformat'] != 'ELF':
+        return
+    dependencies_link = []
+    for depname in fileinfo['dependencies']:
+        findpaths = []
+        ignore_case = False
+        if fileinfo['fileformat'] == 'PE':
+            # https://msdn.microsoft.com/en-us/library/windows/desktop/ms682586(v=vs.85).aspx#search_order_for_desktop_applications
+            if platform.architecture()[0] == '64bit' and fileinfo['bits'] == 32:
+                findpaths.append(os.path.join(windir, 'syswow64'))
+            else:
+                findpaths.append(os.path.join(windir, 'system32'))
+            findpaths.append(windir)
+            if info.system == 'Linux':
+                if not wine_paths:
+                    wine_paths = [*map(lambda p: subprocess.check_output([info.WINEPATH, '-u', p]).decode().strip(),
+                        subprocess.check_output([info.WINE, 'cmd', '/c', 'echo %PATH%']).decode().strip().split(';'))]
+                findpaths += wine_paths
+                ignore_case = True
+            else:
+                findpaths += os.environ['PATH'].split(os.pathsep)
+        elif fileinfo['fileformat'] == 'ELF':
+            # man ld.so
+            origin = os.path.dirname(filename)
+            lib = 'lib64' if fileinfo['bits'] == 64 else 'lib'
+            pl = platform.machine()
+            def replace_rpath(p: str):
+                p = re.sub(r'\$ORIGIN(?=[^a-zA-Z0-9\s])', origin, p)
+                p = re.sub(r'\${ORIGIN}', origin, p)
+                p = re.sub(r'\$LIB(?=[^a-zA-Z0-9\s])', lib, p)
+                p = re.sub(r'\${LIB}', lib, p)
+                p = re.sub(r'\$PLATFORM(?=[^a-zA-Z0-9\s])', pl, p)
+                p = re.sub(r'\${PLATFORM}', pl, p)
+                return p
+            for rpath in fileinfo['rpath']:
+                findpaths.append(replace_rpath(rpath))
+            if 'LD_LIBRARY_PATH' in os.environ:
+                findpaths += os.environ['LD_LIBRARY_PATH'].split(os.pathsep)
+            for runpath in fileinfo['runpath']:
+                findpaths.append(replace_rpath(runpath))
+            if fileinfo['bits'] == 64:
+                findpaths += ['/lib64', '/usr/lib64']
+            findpaths += ['/lib', '/usr/lib']
+        filepath = None
+        for path in findpaths:
+            if ignore_case and os.path.isdir(path):
+                for fname in os.listdir(path):
+                    if depname.lower() == fname.lower():
+                        filepath = os.path.join(path, fname)
+                        break
+            else:
+                file_test = os.path.join(path, depname)
+                if os.path.exists(file_test) and os.path.isfile(file_test):
+                    filepath = file_test
+                    break
+        if filepath:
+            filepath = os.path.realpath(filepath)
+        dependencies_link.append(filepath)
+    fileinfo['dependencies_link'] = dependencies_link
+
+def queryDependency(filepath: str, debug=False, circular=set()) -> List[str]:
+    global windir
+    if info.system == 'Windows':
+        if filepath.lower().startswith(windir.lower() + '\\'):
+            return []
+    else:
+        if filepath.startswith(windir + '/'):
+            return []
+    if filepath not in info.binaries:
+        resolveDependency(filepath)
+    fileinfo = info.binaries[filepath]
+    if fileinfo['fileformat'] != 'PE' and fileinfo['fileformat'] != 'ELF':
+        return []
+    result = []
+    for i in range(0, len(fileinfo['dependencies'])):
+        depname = fileinfo['dependencies'][i]
+        deppath = fileinfo['dependencies_link'][i]
+        if deppath:
+            if depname in circular:
+                depquery = []
+                if debug:
+                    depquery = [f'{depname} => (circular)']
+            else:
+                c = circular.copy()
+                c.add(depname)
+                depquery = [*map(lambda s: '    ' + s, queryDependency(deppath, debug, c))]
+                if depquery or debug:
+                    depquery = [f'{depname} => {deppath}'] + depquery
+        else:
+            depquery = [f'{depname} => NOT FOUND']
+        result += depquery
+    return result
 
 ExecDescription = TypeVar('ExecDescription', Tuple[str, bool, str], Tuple[str, bool])
 def checkExecutables(executables: List[ExecDescription]) -> None:
@@ -210,8 +318,12 @@ def checkExecutables(executables: List[ExecDescription]) -> None:
         filepath = findExecutable(exe[0], shorthand)
         if exe[1] and filepath is None:
             not_found.append(exe[0])
-        else:
-            checkDependency(filepath)
+        elif filepath is not None:
+            depinfo = queryDependency(filepath, False)
+            if depinfo:
+                logger.warn(filepath + ':')
+                for l in depinfo:
+                    logger.warn(f'    {l}')
     if len(not_found) > 0:
         logger.critical(f'Executables not found: {", ".join(not_found)}')
         exit(-1)
@@ -220,6 +332,14 @@ def precheck() -> None:
     logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     checkPython()
     setRootDirectory()
+    if info.system == 'Linux':
+        checkExecutables([('wine', True), ('winepath', True)])
+
+    if windir is None:
+        if info.system == 'Windows':
+            windir = os.environ['WINDIR']
+        else:
+            windir = subprocess.check_output([info.WINEPATH, '-u', r'C:\windows']).decode().strip()
 
     addPath(os.path.join(info.root_directory, 'bin', info.system.lower()))
     addLibPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib'))
@@ -257,7 +377,6 @@ def precheck() -> None:
         ]
     else:
         executables = [
-            ('wine', True),
             ('vspipe', True),
             ('ffmpeg', True),
             ('mediainfo', True),

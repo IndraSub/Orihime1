@@ -284,9 +284,11 @@ def queryDependency(filepath: str, debug=False, circular=set()) -> List[str]:
     elif windir:
         if filepath.startswith(windir + '/'):
             return []
-    if filepath not in info.binaries:
+    if filepath not in info.binaries or 'dependencies_link' not in info.binaries[filepath]:
         resolveDependency(filepath)
     fileinfo = info.binaries[filepath]
+    if 'checked' in fileinfo and not debug:
+        return []
     if fileinfo['fileformat'] != 'PE' and fileinfo['fileformat'] != 'ELF':
         return []
     result = []
@@ -307,6 +309,8 @@ def queryDependency(filepath: str, debug=False, circular=set()) -> List[str]:
         else:
             depquery = [f'{depname} => NOT FOUND']
         result += depquery
+    if not result:
+        fileinfo['checked'] = True
     return result
 
 ExecDescription = TypeVar('ExecDescription', Tuple[str, bool, str], Tuple[str, bool])
@@ -318,7 +322,7 @@ def checkExecutables(executables: List[ExecDescription]) -> None:
         if exe[1] and filepath is None:
             not_found.append(exe[0])
         elif filepath is not None:
-            depinfo = queryDependency(filepath, False)
+            depinfo = queryDependency(filepath)
             if depinfo:
                 logger.warn(filepath + ':')
                 for l in depinfo:
@@ -326,6 +330,24 @@ def checkExecutables(executables: List[ExecDescription]) -> None:
     if len(not_found) > 0:
         logger.critical(f'Executables not found: {", ".join(not_found)}')
         exit(-1)
+
+def findVSPlugins() -> List[str]:
+    result = []
+    plugin_dir = os.path.join(info.root_directory, 'bin', info.system.lower(), 'filter_plugins', 'vs')
+    for root, dirs, files in os.walk(plugin_dir):
+        for name in files:
+            path = os.path.join(root, name)
+            if path.lower().endswith('.dll') or (info.system == 'Linux' and path.endswith('.so')):
+                loadBinaryInfo(path)
+                fileinfo = info.binaries[path]
+                if 'VapourSynthPluginInit' in fileinfo['exports']:
+                    result.append(path)
+                    depinfo = queryDependency(path)
+                    if depinfo:
+                        logger.warn(path + ':')
+                        for l in depinfo:
+                            logger.warn(f'    {l}')
+    return result
 
 def precheck() -> None:
     global windir
@@ -387,3 +409,4 @@ def precheck() -> None:
             ('qaac64.exe', True, 'qaac'),
         ]
     checkExecutables(executables)
+

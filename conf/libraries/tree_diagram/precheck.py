@@ -77,6 +77,7 @@ def checkPython() -> None:
     if not passed:
         exit(-1)
     info.system = plat_info.system
+    info.system_version = release
     info.PYTHON = sys.executable
 
 def setRootDirectory() -> None:
@@ -295,9 +296,9 @@ def queryDependency(filepath: str, debug=False, circular=set()) -> List[str]:
     for i in range(0, len(fileinfo['dependencies'])):
         depname = fileinfo['dependencies'][i]
         deppath = fileinfo['dependencies_link'][i]
+        depquery = []
         if deppath:
             if depname in circular:
-                depquery = []
                 if debug:
                     depquery = [f'{depname} => (circular)']
             else:
@@ -306,6 +307,9 @@ def queryDependency(filepath: str, debug=False, circular=set()) -> List[str]:
                 depquery = [*map(lambda s: '    ' + s, queryDependency(deppath, debug, c))]
                 if depquery or debug:
                     depquery = [f'{depname} => {deppath}'] + depquery
+        elif depname.startswith('api-ms-win') and info.system == 'Windows' and int(info.system_version.split('.')[0]) >= 10:
+            if debug:
+                depquery = [f'{depname} => (internal)']
         else:
             depquery = [f'{depname} => NOT FOUND']
         result += depquery

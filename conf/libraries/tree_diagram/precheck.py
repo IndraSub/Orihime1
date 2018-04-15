@@ -210,11 +210,11 @@ def loadBinaryInfo(filename: str):
 
 wine_paths = None
 windir = None
-def resolveDependency(filename: str) -> None:
+def resolveDependency(filepath: str) -> None:
     global wine_paths, windir
-    if filename not in info.binaries:
-        loadBinaryInfo(filename)
-    fileinfo = info.binaries[filename]
+    if filepath not in info.binaries:
+        loadBinaryInfo(filepath)
+    fileinfo = info.binaries[filepath]
     if 'dependencies_link' in fileinfo:
         return
     if fileinfo['fileformat'] != 'PE' and fileinfo['fileformat'] != 'ELF':
@@ -225,6 +225,7 @@ def resolveDependency(filename: str) -> None:
         ignore_case = False
         if fileinfo['fileformat'] == 'PE':
             # https://msdn.microsoft.com/en-us/library/windows/desktop/ms682586(v=vs.85).aspx#search_order_for_desktop_applications
+            findpaths.append(os.path.dirname(filepath))
             if platform.architecture()[0] == '64bit' and fileinfo['bits'] == 32:
                 findpaths.append(os.path.join(windir, 'syswow64'))
             else:
@@ -240,7 +241,7 @@ def resolveDependency(filename: str) -> None:
                 findpaths += os.environ['PATH'].split(os.pathsep)
         elif fileinfo['fileformat'] == 'ELF':
             # man ld.so
-            origin = os.path.dirname(filename)
+            origin = os.path.dirname(filepath)
             lib = 'lib64' if fileinfo['bits'] == 64 else 'lib'
             pl = platform.machine()
             def replace_rpath(p: str):
@@ -260,21 +261,21 @@ def resolveDependency(filename: str) -> None:
             if fileinfo['bits'] == 64:
                 findpaths += ['/lib64', '/usr/lib64']
             findpaths += ['/lib', '/usr/lib']
-        filepath = None
+        depfilepath = None
         for path in findpaths:
             if ignore_case and os.path.isdir(path):
                 for fname in os.listdir(path):
                     if depname.lower() == fname.lower():
-                        filepath = os.path.join(path, fname)
+                        depfilepath = os.path.join(path, fname)
                         break
             else:
                 file_test = os.path.join(path, depname)
                 if os.path.exists(file_test) and os.path.isfile(file_test):
-                    filepath = file_test
+                    depfilepath = file_test
                     break
-        if filepath:
-            filepath = os.path.realpath(filepath)
-        dependencies_link.append(filepath)
+        if depfilepath:
+            depfilepath = os.path.realpath(depfilepath)
+        dependencies_link.append(depfilepath)
     fileinfo['dependencies_link'] = dependencies_link
 
 def queryDependency(filepath: str, debug=False, circular=set()) -> List[str]:

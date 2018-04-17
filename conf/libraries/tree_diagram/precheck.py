@@ -394,12 +394,12 @@ def precheck() -> None:
             ('vspipe.exe', True),
             ('ffmpeg.exe', True),
             ('mediainfo.exe', True),
-            ('x264_7mod_64-8bit.exe', False, 'x264'),
-            ('x264_7mod_64-10bit.exe', False, 'x264_10bit'),
-            ('x265-misaka-8bit.exe', False, 'x265'),
-            ('x265-misaka-10bit.exe', False, 'x265_10bit'),
             ('mkvmerge.exe', True),
             ('mkvpropedit.exe', True),
+            ('x264_7mod_64-8bit.exe', False, 'x264_7mod'),
+            ('x264_7mod_64-10bit.exe', False, 'x264_7mod_10bit'),
+            ('x265-misaka-8bit.exe', False, 'x265'),
+            ('x265-misaka-10bit.exe', False, 'x265_10bit'),
             ('qaac64.exe', True, 'qaac'),
         ]
     else:
@@ -407,10 +407,10 @@ def precheck() -> None:
             ('vspipe', True),
             ('ffmpeg', True),
             ('mediainfo', True),
-            ('x264', False),
-            ('x265', False),
             ('mkvmerge', True),
             ('mkvpropedit', True),
+            ('x264', False),
+            ('x265', False),
             ('qaac64.exe', True, 'qaac'),
         ]
     checkExecutables(executables)

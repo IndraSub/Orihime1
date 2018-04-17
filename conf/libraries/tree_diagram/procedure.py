@@ -82,12 +82,12 @@ def postProcessVideo(output: str) -> None:
     encoder = content['project']['encoder']
     encoder_binary = getattr(info, encoder.upper())
     encoder_params = content['project']['encoder_params'].split()
-    if encoder == 'x264' or encoder == 'x264_10bit':
+    if encoder.upper().startswith('X264'):
         encoder_params = ['-', '--demuxer', 'y4m'] + encoder_params + ['--output', output]
-    elif encoder == 'x265' or encoder == 'x264_10bit':
+    elif encoder.upper().startswith('X265'):
         encoder_params = ['--y4m'] + encoder_params + ['--output', output, '-']
     else:
-        print(f"Encoder {encoder} is not supported, only support x264 and x265.")
+        print(f"Encoder {encoder} is not supported.")
         exit()
     invokePipeline([
         [info.VSPIPE] + vapoursynth_pipeline,

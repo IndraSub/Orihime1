@@ -9,7 +9,7 @@ import platform
 import importlib
 import string
 import subprocess
-
+import json
 
 logger = logging.getLogger('tree_diagram')
 
@@ -354,11 +354,24 @@ def findVSPlugins() -> List[str]:
                             logger.warn(f'    {l}')
     return result
 
+def loadBinCache():
+    cachepath = os.path.join(info.root_directory, 'bin_cache.json')
+    if os.path.exists(cachepath):
+        with open(cachepath, 'r') as f:
+            info.binaries = json.loads(f.read())
+
+def saveBinCache():
+    cachepath = os.path.join(info.root_directory, 'bin_cache.json')
+    with open(cachepath, 'w') as f:
+        f.write(json.dumps(info.binaries))
+
 def precheck() -> None:
     global windir
     logging.basicConfig(level=logging.DEBUG, format='%(message)s')
+
     checkPython()
     setRootDirectory()
+    loadBinCache()
 
     if info.system == 'Linux':
         checkExecutables([('wine', True), ('winepath', True)])
@@ -415,3 +428,4 @@ def precheck() -> None:
         ]
     checkExecutables(executables)
 
+    saveBinCache()

@@ -23,9 +23,7 @@ class TrimAudio:
         self.enabled = enabled
         if enabled and len(frames) == 0:
             raise ConfigureError('TrimFrames: frames length is 0')
-        self.rawframes = []
-        for first, last in frames:
-            self.rawframes.append([round(first / 4 * 5), round(last / 4 * 5)])
+        self.frames = frames
         self.file = get_working_directory(file)
         self.temporary = temporary
         self.ffmpeg = ffmpeg
@@ -48,7 +46,7 @@ class TrimAudio:
             print('[DEBUG][TrimAudio] Trimming audio file...', file=sys.stderr)
             src = pydub.AudioSegment.from_wav(extractedAudio)
             segments = []
-            for first, last in self.rawframes:
+            for first, last in self.frames:
                 first_ms = first * clip.fps.denominator * 1000 / clip.fps.numerator
                 last_ms = (last + 1) * clip.fps.denominator * 1000 / clip.fps.numerator
                 segments.append(src[first_ms:last_ms])

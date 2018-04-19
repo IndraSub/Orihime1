@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import List, Set
+from typing import List
 from . import info
 import re
 
@@ -17,32 +17,31 @@ def getAssFontsList(filename: str) -> List[str]:
             fontnames += re.findall(r'{\\fn([^{}]+)}', l)
     return fontnames
 
-def getFontsLinux() -> Set[str]:
+if info.system == 'Linux':
     import fontconfig
     fontnames = set()
     fonts = fontconfig.query()
     for i in range(0, len(fonts)):
         for lang, fullname in fonts[i].fullname:
             fontnames.add(fullname)
-    return fontnames
+def checkFontLinux(fontname: str) -> bool:
+    global fontnames
+    return fontname in fontnames
 
-def getFontsWindows() -> Set[str]:
+def checkFontWindows(fontname: str) -> bool:
     import clr
     from System import Drawing
-    fontnames = set()
-    collection = Drawing.Text.InstalledFontCollection()
-    for i in range(0, collection.Length):
-        fontnames.add(collection[i].Name)
-    return fontnames
-
-fontnames = None
-if info.system == 'Windows':
-    fontnames = getFontsWindows()
-else:
-    fontnames = getFontsLinux()
+    try:
+        Drawing.FontFamily(fontname)
+    except:
+        return False
+    return True
 
 def checkFont(fontname: str) -> bool:
-    return fontname in fontnames
+    if info.system == 'Windows':
+        return checkFontWindows(fontname)
+    else:
+        return checkFontLinux(fontname)
 
 def checkAssFonts(filename: str) -> List[dict]:
     fonts = [*map(

@@ -17,24 +17,32 @@ def getAssFontsList(filename: str) -> List[str]:
             fontnames += re.findall(r'{\\fn([^{}]+)}', l)
     return fontnames
 
-def checkFontLinux(fontname: str) -> bool:
+def getFontsLinux(fontname: str) -> bool:
     import fontconfig
-    return bool(fontconfig.query(fontname))
+    fontnames = set()
+    fonts = fontconfig.query()
+    for i in range(0, len(fonts)):
+        for lang, fullname in fonts[i].fullname:
+            fontnames.add(fullname)
+    return fontnames
 
-def checkFontWindows(fontname: str) -> bool:
+def getFontsWindows(fontname: str) -> bool:
     import clr
     from System import Drawing
-    try:
-        Drawing.FontFamily(fontname)
-    except:
-        return False
-    return True
+    fontnames = set()
+    collection = Drawing.Text.InstalledFontCollection()
+    for i in range(0, collection.Length):
+        fontnames.add(collection[i].Name)
+    return fontnames
+
+fontnames = None
+if info.system == 'Windows':
+    fontnames = getFontsWindows(fontname)
+else:
+    fontnames = getFontsLinux(fontname)
 
 def checkFont(fontname: str) -> bool:
-    if info.system == 'Windows':
-        return checkFontWindows(fontname)
-    else:
-        return checkFontLinux(fontname)
+    return fontname in fontnames
 
 def checkAssFonts(filename: str) -> List[dict]:
     fonts = [*map(

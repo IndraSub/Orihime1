@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import List
+from typing import List, Set
 from . import info
 import re
 
@@ -17,7 +17,7 @@ def getAssFontsList(filename: str) -> List[str]:
             fontnames += re.findall(r'{\\fn([^{}]+)}', l)
     return fontnames
 
-def getFontsLinux() -> bool:
+def getFontsLinux() -> Set[str]:
     import fontconfig
     fontnames = set()
     fonts = fontconfig.query()
@@ -26,7 +26,7 @@ def getFontsLinux() -> bool:
             fontnames.add(fullname)
     return fontnames
 
-def getFontsWindows() -> bool:
+def getFontsWindows() -> Set[str]:
     import clr
     from System import Drawing
     fontnames = set()

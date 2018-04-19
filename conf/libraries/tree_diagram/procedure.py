@@ -56,9 +56,9 @@ def precheckSubtitle() -> None:
     subtitle = os.path.join(getWorkingDirectory(), content['source']['subtitle']['filename'])
     fonts = checkAssFonts(subtitle)
     all_installed = True
-    print('{:>15}{:>15}'.format('FontFamily', 'IsInstalled'))
+    print('{:>32}{:>16}'.format('FontFamily', 'IsInstalled'))
     for f in fonts:
-        print('{:>15}{:>15}'.format(f['FontFamily'], f['IsInstalled']))
+        print('{:>32}{:>16}'.format(f['FontFamily'], f['IsInstalled']))
         all_installed = all_installed and f['IsInstalled']
     message = 'Please make sure that all fonts are installed'
     options = ['&Confirm', 'E&xit']

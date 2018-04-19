@@ -17,7 +17,7 @@ def getAssFontsList(filename: str) -> List[str]:
             fontnames += re.findall(r'{\\fn([^{}]+)}', l)
     return fontnames
 
-def getFontsLinux(fontname: str) -> bool:
+def getFontsLinux() -> bool:
     import fontconfig
     fontnames = set()
     fonts = fontconfig.query()
@@ -26,7 +26,7 @@ def getFontsLinux(fontname: str) -> bool:
             fontnames.add(fullname)
     return fontnames
 
-def getFontsWindows(fontname: str) -> bool:
+def getFontsWindows() -> bool:
     import clr
     from System import Drawing
     fontnames = set()
@@ -37,9 +37,9 @@ def getFontsWindows(fontname: str) -> bool:
 
 fontnames = None
 if info.system == 'Windows':
-    fontnames = getFontsWindows(fontname)
+    fontnames = getFontsWindows()
 else:
-    fontnames = getFontsLinux(fontname)
+    fontnames = getFontsLinux()
 
 def checkFont(fontname: str) -> bool:
     return fontname in fontnames

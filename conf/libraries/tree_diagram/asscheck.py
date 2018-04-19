@@ -17,16 +17,9 @@ def getAssFontsList(filename: str) -> List[str]:
             fontnames += re.findall(r'{\\fn([^{}]+)}', l)
     return fontnames
 
-if info.system == 'Linux':
-    import fontconfig
-    fontnames = set()
-    fonts = fontconfig.query()
-    for i in range(0, len(fonts)):
-        for lang, fullname in fonts[i].fullname:
-            fontnames.add(fullname)
 def checkFontLinux(fontname: str) -> bool:
-    global fontnames
-    return fontname in fontnames
+    import fontconfig
+    return bool(fontconfig.query(':fullname=' + fontname))
 
 def checkFontWindows(fontname: str) -> bool:
     import clr

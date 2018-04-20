@@ -1,5 +1,5 @@
 bin/**
-episodes/**
+episodes
 **/__pycache__
 conf/cudnn_data/**
 bin_cache.json

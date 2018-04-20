@@ -49,13 +49,13 @@ class TrimAudio:
                 if d is not None:
                     adelay = float(d.text)
         if vdelay is None:
-            print('[DEBUG][TrimAudio] AudioDelay: video delay not found')
+            print('[DEBUG][TrimAudio] AudioDelay: video delay not found', file=sys.stderr)
             vdelay = 0
         if adelay is None:
-            print('[DEBUG][TrimAudio] AudioDelay: audio delay not found')
+            print('[DEBUG][TrimAudio] AudioDelay: audio delay not found', file=sys.stderr)
             return 0
         delay = int((adelay - vdelay) * 1000)
-        print(f'[DEBUG][TrimAudio] AudioDelay: {delay} ms')
+        print(f'[DEBUG][TrimAudio] AudioDelay: {delay} ms', file=sys.stderr)
         return delay
 
     def __call__(self, core, clip):

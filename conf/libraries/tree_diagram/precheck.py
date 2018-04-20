@@ -41,7 +41,7 @@ def addLibPath(path: str) -> None:
         if 'WINEPATH' not in os.environ:
             os.environ['WINEPATH'] = path
         else:
-            os.environ['WINEPATH'] = path + os.pathsep + os.environ['WINEPATH']
+            os.environ['WINEPATH'] = path + ';' + os.environ['WINEPATH']
 
 def addPythonPath(path: str) -> None: # This one is appended after the current path
     if not os.path.exists(path):

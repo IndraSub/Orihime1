@@ -40,18 +40,15 @@ class Delogo:
         if autodetect:
             auto_dlg = self.auto_delogo(clip, dlg)
         core = vapoursynth.get_core()
-        last_end = 0
         def decide(n):
-            nonlocal last_end
-            if last_end != 0 and abs(n - last_end) < autodetect:
-                return auto_dlg
             for start, end in frames:
+                if abs(n - end) < autodetect:
+                    return auto_dlg
                 if n >= start and n <= end:
-                    last_end = end
                     return dlg
             return clip
         res = core.std.FrameEval(clip, decide)
-        
+
         return logonr.logoNR(core=core, dlg=res, src=clip, l=self.l, r=self.r, t=self.t, b=self.b, chroma=True)
 
     def auto_delogo(self, clip, dlg):

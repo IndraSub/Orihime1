@@ -6,6 +6,7 @@ import importlib
 from datetime import datetime
 import logging
 import io
+import unicodedata
 from . import info
 
 logger = logging.getLogger('tree_diagram')
@@ -79,3 +80,9 @@ def choices(message: str, options: List[str], default_choice: int) -> int:
         for i in range(0, len(options)):
             if val == keys[i] or val == words[i].upper():
                 return i
+
+def padUnicode(s: str, size: int) -> str:
+    l = sum(1 + (unicodedata.east_asian_width(c) in "WF") for c in s)
+    if l < size:
+        return s + ' ' * (size - l)
+    return s

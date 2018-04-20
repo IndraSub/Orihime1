@@ -54,6 +54,7 @@ class Delogo:
     def auto_delogo(self, clip, dlg):
         core = vapoursynth.get_core()
         clip_c = core.std.Crop(clip, left=self.l, right=self.r, top=self.t, bottom=self.b)
+        clip_c = core.fmtc.resample(clip_c, css='444')
         clip_e_a = core.tcanny.TCanny(clip_c, mode=1, sigma=0.5, op=2)
         clip_e_y = core.std.ShufflePlanes(clip_e_a, 0, vapoursynth.GRAY)
         clip_e_u = core.std.ShufflePlanes(clip_e_a, 1, vapoursynth.GRAY)
@@ -61,6 +62,7 @@ class Delogo:
         clip_e = core.std.Expr([clip_e_y, clip_e_u, clip_e_v], 'x y max z max')
 
         dlg_c = core.std.Crop(dlg, left=self.l, right=self.r, top=self.t, bottom=self.b)
+        dlg_c = core.fmtc.resample(dlg_c, css='444')
         dlg_e_a = core.tcanny.TCanny(dlg_c, mode=1, sigma=0.5, op=2)
         dlg_e_y = core.std.ShufflePlanes(dlg_e_a, 0, vapoursynth.GRAY)
         dlg_e_u = core.std.ShufflePlanes(dlg_e_a, 1, vapoursynth.GRAY)

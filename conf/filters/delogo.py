@@ -37,5 +37,5 @@ class Delogo:
         for index in range(0, 4):
             start, end = self.frames[index]
             last_frame = frame
-            frame += int(end - start + 1)
+            frame += int((end - start + 1) / 5 * 4)
             yield last_frame, frame - off[index]

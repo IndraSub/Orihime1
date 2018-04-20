@@ -379,6 +379,7 @@ def precheck() -> None:
     addPath(os.path.join(info.root_directory, 'bin', info.system.lower()))
     addLibPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib'))
     addPythonPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib', 'python'))
+    addPythonPath(os.path.join(info.root_directory, 'conf', 'libraries'))
 
     if info.system == 'Windows':
         windir = os.environ['WINDIR']

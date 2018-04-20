@@ -51,7 +51,7 @@ def makeCropAfter(enabled, configure):
 def makeDelogo(trim_frames, enabled, configure):
     if enabled is False:
         return
-    return Delogo(logo_file=configure.get('logo_file'), frames=trim_frames, )
+    return Delogo(frames=trim_frames, **configure)
 
 
 def makeDenoise(method, configure):

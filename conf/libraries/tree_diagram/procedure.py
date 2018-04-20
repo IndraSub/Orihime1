@@ -57,6 +57,7 @@ def precheckSubtitle() -> None:
     fonts = checkAssFonts(subtitle)
     all_installed = True
     print('{:16}{:<32}{:<16}'.format('', 'FontFamily', 'IsInstalled'))
+    print('{:16}{}'.format('', '-' * 48))
     for f in fonts:
         print('{:16}{}{:<16}'.format('', padUnicode(f['FontFamily'], 32), f['IsInstalled']))
         all_installed = all_installed and f['IsInstalled']

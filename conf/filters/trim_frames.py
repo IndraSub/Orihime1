@@ -39,13 +39,13 @@ class TrimAudio:
         xml = ET.fromstring(xmlstr)
         vdelay = None
         adelay = None
-        for track in xml.iter('track'):
+        for track in xml.iter('{https://mediaarea.net/mediainfo}track'):
             if track.attrib['type'] == 'Video':
-                d = track.find('Delay')
+                d = track.find('{https://mediaarea.net/mediainfo}Delay')
                 if d is not None:
                     vdelay = float(d.text)
             elif track.attrib['type'] == 'Audio':
-                d = track.find('Delay')
+                d = track.find('{https://mediaarea.net/mediainfo}Delay')
                 if d is not None:
                     adelay = float(d.text)
         if vdelay is None:

@@ -19,7 +19,7 @@ def getAssFontsList(filename: str) -> List[str]:
 
 def checkFontLinux(fontname: str) -> bool:
     import fontconfig
-    return bool(fontconfig.query(fontname.replace('-', r'\-').replace('_', r'\_')))
+    return bool(fontconfig.query(f':family={fontname}'))
 
 def checkFontWindows(fontname: str) -> bool:
     import clr

@@ -13,7 +13,7 @@ class Delogo:
         if len(frames) == 0:
             raise ConfigureError('Delogo: frames length is 0')
         self.logo_file = get_working_directory(logo_file)
-        self.frames = self.get_frames(frames)
+        self.frames = [*self.get_frames(frames)]
         self.l = l
         self.r = r
         self.t = t

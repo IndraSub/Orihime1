@@ -76,6 +76,8 @@ def postProcessVideo(output: str) -> None:
         f'temporary={temporary}',
         '--arg',
         f'ffmpeg={info.FFMPEG}',
+        '--arg',
+        f'mediainfo={info.MEDIAINFO}',
         os.path.join(info.root_directory, 'conf', 'misaka64.py'),
         '-',
     ]

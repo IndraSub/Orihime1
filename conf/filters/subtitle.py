@@ -13,7 +13,7 @@ class Subtitle:
     def __call__(self, core, clip):
         clip = core.fmtc.resample(clip, css="420", fulls=True)
         frames = core.vsfm.TextSubMod(clip, self.file)
-        date = time.strftime('%Y-%m-%d %X', time.gmtime(time.time()))
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time()))
         framenum = str(frames.num_frames)
         if len(self.texts):
             replaced = [

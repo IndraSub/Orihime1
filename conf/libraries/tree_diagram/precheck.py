@@ -424,6 +424,8 @@ def precheck() -> None:
             ('mkvmerge', True),
             ('mkvpropedit', True),
             ('x264', False),
+            ('x264_7mod', False),
+            ('x264_7mod-10bit', False),
             ('x265', False),
             ('qaac64.exe', True, 'qaac'),
         ]

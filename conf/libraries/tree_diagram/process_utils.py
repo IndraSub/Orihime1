@@ -18,3 +18,7 @@ def invokePipeline(pipeline: List[List[str]]) -> None:
         if stdin:
             stdin.close()
     processes[-1].wait()
+    # last process exited, terminate all processes if still running
+    for proc in processes:
+        if proc.poll() is None:
+            proc.terminate()

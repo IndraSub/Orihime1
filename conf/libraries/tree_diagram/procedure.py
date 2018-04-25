@@ -43,7 +43,7 @@ with open(os.path.join(working_directory, content['project']), encoding='utf8') 
 content['title'] = content['title'].format(**content)
 content['source']['filename'] = content['source']['filename'].format(**content)
 content['output']['filename'] = content['output']['filename'].format(**content)
-if 'subtitle' in content['source']:
+if 'subtitle' in content['source'] and content['source']['subtitle']:
     content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
 
 info.working_directory = working_directory
@@ -61,13 +61,13 @@ def missionReport() -> None:
 
     report = [
         {'Title': content['title']},
-        {"Temporary Files": os.path.join(working_directory, 'temporary')},
+        {"Temporary Files": temporary},
         {"Quality": content['quality']},
         {"Source": os.path.join(working_directory, content['source']['filename'])}
     ]
     report += [
         {"Subtitle": os.path.join(working_directory, content['source']['subtitle']['filename'])}
-    ] if 'subtitle' in content['source'] else []
+    ] if 'subtitle' in content['source'] and content['source']['subtitle'] else []
     report += [
         {"Output": os.path.join(working_directory, content['output']['filename'])},
     ]
@@ -194,8 +194,8 @@ def missionComplete(output: str):
 
 def main() -> None:
     missionReport()
-    precleanTemporaryFiles()
     precheckSubtitle()
+    precleanTemporaryFiles()
     processVideo()
     encodeAudio()
     mkvMerge()

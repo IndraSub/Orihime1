@@ -2,7 +2,6 @@
 
 from typing import List, Tuple
 import os
-import os.path as path
 import sys
 import shutil
 import io
@@ -18,7 +17,7 @@ import yaml
 logger = logging.getLogger('tree_diagram')
 
 working_directory = os.path.join(info.root_directory, 'episodes')
-temporary = path.join(working_directory, 'temporary')
+temporary = os.path.join(working_directory, 'temporary')
 
 worklist_path = os.path.join(working_directory, 'missions.yaml')
 if not os.path.exists(worklist_path):
@@ -62,15 +61,15 @@ def missionReport() -> None:
 
     report = [
         {'Title': content['title']},
-        {"Temporary Files": path.join(working_directory, 'temporary')},
+        {"Temporary Files": os.path.join(working_directory, 'temporary')},
         {"Quality": content['quality']},
-        {"Source": path.join(working_directory, content['source']['filename'])}
+        {"Source": os.path.join(working_directory, content['source']['filename'])}
     ]
     report += [
-        {"Subtitle": path.join(working_directory, content['subtitle']['filename'])}
+        {"Subtitle": os.path.join(working_directory, content['subtitle']['filename'])}
     ] if 'subtitle' in content else []
     report += [
-        {"Output": path.join(working_directory, content['output']['filename'])},
+        {"Output": os.path.join(working_directory, content['output']['filename'])},
     ]
 
     yaml.dump(report, sys.stdout, default_flow_style=False)
@@ -82,7 +81,7 @@ def missionReport() -> None:
 
 def precleanTemporaryFiles() -> None:
     writeEventName('Checking temporary files')
-    if not path.exists(temporary):
+    if not os.path.exists(temporary):
         os.makedirs(temporary)
     directoryFiles = os.listdir(temporary)
     if len(directoryFiles) == 0:

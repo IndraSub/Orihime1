@@ -33,6 +33,11 @@ def make_tasks(configure):
                          makePostProcess, makeResolution, makeSubtitle, makeTrimFrames, makeTrimAudio)
 
     source = configure['source']
+    # replace variables in source
+    if 'filename' in source:
+        source['filename'] = source['filename'].format(**configure)
+    if 'subtitle' in source:
+        source['subtitle']['filename'] = source['subtitle']['filename'].format(**configure)
     flow = configure['project']['flow']
     filter_conf = configure['project']['filter_configure']
     trim_frames = source.get('trim_frames', [])
@@ -56,7 +61,7 @@ def make_tasks(configure):
         makeMCFI(*makeArgs('MCFI')),
         makeCropAfter(*makeArgs('CropAfter')),
         makeResolution(*makeArgs('Resolution')),
-        makeSubtitle(source.get('subtitle')),
+        makeSubtitle(source.get('subtitle'), configure),
         makeDeband(flow.get('Deband', False)),
         makeFormat(flow.get('Format', False)), )
 

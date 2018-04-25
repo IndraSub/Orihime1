@@ -96,10 +96,10 @@ def makeResolution(enabled, configure):
         configure.get('height', 720), )
 
 
-def makeSubtitle(subtitle):
+def makeSubtitle(subtitle, configure=None):
     if subtitle is None:
         return
-    return Subtitle(subtitle.get('filename'), subtitle.get('texts', []))
+    return Subtitle(subtitle.get('filename'), subtitle.get('texts', []), configure)
 
 
 def makeFormat(format):

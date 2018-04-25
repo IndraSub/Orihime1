@@ -42,8 +42,8 @@ def extractAudio(source: str, extractedAudio: str) -> None:
     ])
     assertFileWithExit(extractedAudio)
 
-def trimAudio(extractedAudio: str, trimmedAudio: str, frames=None) -> None:
-    fps, delay = getSourceInfo()
+def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) -> None:
+    fps, delay = getSourceInfo(source)
     print('Trimming audio file...')
     src = pydub.AudioSegment.from_wav(extractedAudio)
     segments = []

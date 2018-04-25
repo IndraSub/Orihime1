@@ -148,7 +148,7 @@ def processAudio() -> None:
         trim_frames = content['source']['trim_frames']
     writeEventName('Trim audio & Encode')
     extractAudio(source, extractedAudio)
-    trimAudio(extractedAudio, trimmedAudio, trim_frames)
+    trimAudio(source, extractedAudio, trimmedAudio, trim_frames)
     encodeAudio(trimmedAudio, encodedAudio)
     assertFileWithExit(encodedAudio)
 

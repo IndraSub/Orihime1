@@ -80,7 +80,7 @@ def checkSystem() -> None:
 def setRootDirectory() -> None:
     script_path = os.path.realpath(__file__)
     script_directory = os.path.dirname(script_path)
-    info.root_directory = os.path.abspath(os.path.join(script_directory, '..', '..', '..'))
+    info.root_directory = os.path.abspath(os.path.join(script_directory, '..', '..'))
 
 def assertModulesInstalled(names: List[str]) -> None:
     not_found = []

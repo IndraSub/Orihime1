@@ -3,4 +3,4 @@
 from .precheck import precheck, info
 precheck()
 from .procedure import main, missionReport, precheckSubtitle, precleanTemporaryFiles, \
-    processVideo, encodeAudio, mkvMerge, mkvMetainfo, cleanTemporaryFiles, missionComplete
+    processVideo, processAudio, mkvMerge, mkvMetainfo, cleanTemporaryFiles, missionComplete

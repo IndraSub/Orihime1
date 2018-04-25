@@ -9,9 +9,10 @@ import logging
 import json
 
 from . import info
-from .kit import writeEventName, padUnicode, choices
-from .asscheck import checkAssFonts
+from .kit import writeEventName, assertFileWithExit, choices, padUnicode
 from .process_utils import invokePipeline
+from .asscheck import checkAssFonts
+from .audio_utils import extractAudio, trimAudio, encodeAudio
 
 import yaml
 
@@ -51,11 +52,6 @@ info.working_directory = working_directory
 info.current_working = mission_path
 info.temporary = temporary
 info.content = content
-
-def assertFileWithExit(filename: str) -> None:
-    if not os.path.exists(filename) or os.path.getsize(filename) == 0:
-        logger.critical(f'Failed operation detected, press anykey to exit')
-        exit(-1)
 
 def missionReport() -> None:
     writeEventName('Mission Report')
@@ -117,7 +113,7 @@ def precheckSubtitle() -> None:
 
 def processVideo() -> None:
     output = os.path.join(temporary, 'video-encoded.mp4')
-    writeEventName('Post-process with VapourSynth & Rip video data with x265')
+    writeEventName('Process video with VapourSynth & Encode')
     tdinfo = dict(info)
     tdinfo['binaries'] = None # avoid envvar growing too large
     os.environ['TDINFO'] = json.dumps(tdinfo)
@@ -142,14 +138,18 @@ def processVideo() -> None:
     ])
     assertFileWithExit(output)
 
-def encodeAudio() -> None:
+def processAudio() -> None:
+    source = os.path.join(working_directory, content['source']['filename'])
+    extractedAudio = os.path.join(temporary, 'audio-extracted.wav')
     trimmedAudio = os.path.join(temporary, 'audio-trimmed.wav')
     encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
-    writeEventName('Recode audio data to AAC format with QAAC')
-    invokePipeline([
-        [info.FFMPEG, '-hide_banner', '-i', trimmedAudio, '-f', 'wav', '-vn', '-'],
-        [info.QAAC, '--tvbr', '127', '--quality', '2', '--ignorelength', '-o', encodedAudio, '-'],
-    ])
+    trim_frames = None
+    if content['project']['flow'].get('TrimFrames', False):
+        trim_frames = content['source']['trim_frames']
+    writeEventName('Trim audio & Encode')
+    extractAudio(source, extractedAudio)
+    trimAudio(extractedAudio, trimmedAudio, trim_frames)
+    encodeAudio(trimmedAudio, encodedAudio)
     assertFileWithExit(encodedAudio)
 
 def mkvMerge() -> None:
@@ -157,8 +157,7 @@ def mkvMerge() -> None:
     encodedVideo = os.path.join(temporary, 'video-encoded.mp4')
     encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
     writeEventName('Merge audio & video data with MKVMerge')
-    merge = ['-o', output, encodedVideo, encodedAudio]
-    invokePipeline([[info.MKVMERGE] + merge])
+    invokePipeline([[info.MKVMERGE, '-o', output, encodedVideo, encodedAudio]])
     assertFileWithExit(output)
 
 def mkvMetainfo() -> None:
@@ -186,14 +185,14 @@ def cleanTemporaryFiles() -> None:
 def missionComplete():
     output = os.path.join(working_directory, content['output']['filename'])
     writeEventName('Mission Complete')
-    invokePipeline([['mediainfo', output]])
+    invokePipeline([[info.MEDIAINFO, output]])
 
 def main() -> None:
     missionReport()
     precheckSubtitle()
     precleanTemporaryFiles()
     processVideo()
-    encodeAudio()
+    processAudio()
     mkvMerge()
     mkvMetainfo()
     cleanTemporaryFiles()

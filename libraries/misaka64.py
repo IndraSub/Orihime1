@@ -26,7 +26,7 @@ def make_tasks(configure):
         filter_conf.get(name, {}), )
     return (
         Source(source['filename'], *makeArgs('Source')),
-        makeTrimAudio(flow.get('TrimFrames', False), source['filename'], trim_frames),
+        #makeTrimAudio(flow.get('TrimFrames', False), source['filename'], trim_frames), # now processed by tree_diagram
         makeTrimFrames(flow.get('TrimFrames', False), trim_frames),
         makePostProcess(*makeArgs('PostProcess')),
         makeCropBefore(*makeArgs('CropBefore')),

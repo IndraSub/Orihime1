@@ -2,12 +2,18 @@
 
 from typing import List
 from datetime import datetime
+import os
 import unicodedata
 
 def writeEventName(title: str) -> None:
     print('-' * 126)
     print(f'[{datetime.now().isoformat()}] {title}')
     print('-' * 126)
+
+def assertFileWithExit(filename: str) -> None:
+    if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+        logger.critical(f'Failed operation detected, press anykey to exit')
+        exit(-1)
 
 def choices(message: str, options: List[str], default_choice: int) -> int:
     '''

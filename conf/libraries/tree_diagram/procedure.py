@@ -29,7 +29,7 @@ with open(worklist_path, encoding='utf8') as f:
     worklist = yaml.load(f)
 
 mission_path = os.path.join(working_directory, worklist['missions'][0]) #NOTE: Take value of index 0 is a workaround, will process all indexes in future!
-if not os.path.exists(path):
+if not os.path.exists(mission_path):
     logger.critical(f'{path} not found')
     exit(-1)
 

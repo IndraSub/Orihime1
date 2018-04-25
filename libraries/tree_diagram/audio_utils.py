@@ -38,7 +38,7 @@ def getSourceInfo(source: str) -> int:
 def extractAudio(source: str, extractedAudio: str) -> None:
     print('Extracting audio file, this may take a while on long videos...')
     invokePipeline([
-        [info.FFMPEG, '-i', source, '-vn', '-acodec', 'pcm_s16le', '-f', 'wav', extractedAudio]
+        [info.FFMPEG, '-hide_banner', '-i', source, '-vn', '-acodec', 'pcm_s16le', '-f', 'wav', extractedAudio]
     ])
     assertFileWithExit(extractedAudio)
 

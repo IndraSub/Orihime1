@@ -3,10 +3,15 @@
 from typing import List
 import subprocess
 from subprocess import Popen
+import logging
 from . import info
+
+logger = logging.getLogger('tree_diagram')
 
 def invokePipeline(pipeline: List[List[str]]) -> None:
     processes = []
+    for cmd in pipeline:
+        logger.debug(f'Invoking: {cmd}')
     for cmd in pipeline:
         if info.system == 'Linux' and cmd[0] in info.binaries:
             bininfo = info.binaries[cmd[0]]

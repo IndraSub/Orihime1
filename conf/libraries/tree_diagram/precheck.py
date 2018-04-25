@@ -13,13 +13,10 @@ import json
 
 logger = logging.getLogger('tree_diagram')
 
-class Info:
-    def __getitem__(self, name):
-        return self.__dict__[name]
-    def __setitem__(self, name, value):
-        self.__dict__[name] = value
-    def __delitem__(self, name):
-        del self.__dict__[name]
+class Info(dict):
+    def __init__(self, *args, **kwargs):
+        super(Info, self).__init__(*args, **kwargs)
+        self.__dict__ = self
 
 info = Info()
 info.binaries = {}
@@ -52,7 +49,7 @@ def addPythonPath(path: str) -> None: # This one is appended after the current p
         os.environ['PYTHONPATH'] += os.pathsep + path
     sys.path.append(path)
 
-def checkPython() -> None:
+def checkSystem() -> None:
     plat_info = platform.uname()
     logger.info('PYTHON VERSION: {}'.format(sys.version.replace('\n', '')))
     logger.info(f'PYTHON EXECUTABLE: {sys.executable}')
@@ -367,9 +364,9 @@ def saveBinCache():
 
 def precheck() -> None:
     global windir
-    logging.basicConfig(level=logging.DEBUG, format='%(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
 
-    checkPython()
+    checkSystem()
     setRootDirectory()
     loadBinCache()
 

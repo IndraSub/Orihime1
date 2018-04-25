@@ -5,24 +5,72 @@ import os
 import os.path as path
 import sys
 import shutil
+import io
+import logging
 
-from . import *
+from . import info
+from .kit import writeEventName, padUnicode, choices
+from .asscheck import checkAssFonts
+from .process_utils import invokePipeline
 
 import yaml
 
-content = getWorkingContent()
-temporary = path.join(getWorkingDirectory(), 'temporary')
+logger = logging.getLogger('tree_diagram')
 
-def missionReport(title: str, output: str) -> None:
+working_directory = os.path.join(info.root_directory, 'episodes')
+temporary = path.join(working_directory, 'temporary')
+
+worklist_path = os.path.join(working_directory, 'missions.yaml')
+if not os.path.exists(worklist_path):
+    logger.critical(f'{worklist_path} not found')
+    exit(-1)
+
+with open(worklist_path, encoding='utf8') as f:
+    worklist = yaml.load(f)
+
+mission_path = os.path.join(working_directory, worklist['missions'][0]) #NOTE: Take value of index 0 is a workaround, will process all indexes in future!
+if not os.path.exists(path):
+    logger.critical(f'{path} not found')
+    exit(-1)
+
+with open(mission_path, encoding='utf8') as f:
+    content = yaml.load(f)
+
+with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
+    descriptions = yaml.load_all(f)
+    content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
+
+# replacements
+content['title'] = content['title'].format(**content)
+content['source']['filename'] = content['source']['filename'].format(**content)
+content['output']['filename'] = content['output']['filename'].format(**content)
+if 'subtitle' in content:
+    content['subtitle']['filename'] = content['subtitle']['filename'].format(**content)
+
+info.working_directory = working_directory
+info.current_working = mission_path
+info.temporary = temporary
+info.content = content
+
+def assertFileWithExit(filename: str) -> None:
+    if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+        logger.critical(f'Failed operation detected, press anykey to exit')
+        exit(-1)
+
+def missionReport() -> None:
     writeEventName('Mission Report')
-    working_directory = path.relpath(getWorkingDirectory())
 
     report = [
         {'Title': title},
         {"Temporary Files": path.join(working_directory, 'temporary')},
         {"Quality": content['quality']},
-        {"Source": path.join(working_directory, content['source']['filename'])},
-        {"Output": path.join(working_directory, output)},
+        {"Source": path.join(working_directory, content['source']['filename'])}
+    ]
+    report += [
+        {"Subtitle": path.join(working_directory, content['subtitle']['filename'])}
+    ] if 'subtitle' in content else []
+    report += [
+        {"Output": path.join(working_directory, content['output']['filename'])},
     ]
 
     yaml.dump(report, sys.stdout, default_flow_style=False)
@@ -31,7 +79,7 @@ def missionReport(title: str, output: str) -> None:
     answer = choices(message, options, 1)
     if answer == 1:
         exit()
-
+getMissionFilePath
 def precleanTemporaryFiles() -> None:
     writeEventName('Checking temporary files')
     if not path.exists(temporary):
@@ -67,12 +115,13 @@ def precheckSubtitle() -> None:
     if answer == 1:
         exit()
 
-def postProcessVideo(output: str) -> None:
+def processVideo() -> None:
+    output = os.path.join(temporary, 'video-encoded.mp4')
     writeEventName('Post-process with VapourSynth & Rip video data with x265')
     vapoursynth_pipeline = [
         '--y4m',
         '--arg',
-        f'current_working={getMissionFilePath(getWorkListFilePath(), 0)}',
+        f'current_working={mission_path}',
         '--arg',
         f'temporary={temporary}',
         '--arg',
@@ -83,22 +132,24 @@ def postProcessVideo(output: str) -> None:
         '-',
     ]
     encoder = content['project']['encoder']
-    encoder_binary = getattr(info, encoder.upper())
+    encoder_binary = info[encoder.upper()]
     encoder_params = content['project']['encoder_params'].split()
-    if encoder.upper().startswith('X264'):
+    if encoder.lower().startswith('x264'):
         encoder_params = ['-', '--demuxer', 'y4m'] + encoder_params + ['--output', output]
-    elif encoder.upper().startswith('X265'):
+    elif encoder.lower().startswith('x265'):
         encoder_params = ['--y4m'] + encoder_params + ['--output', output, '-']
     else:
         print(f"Encoder {encoder} is not supported.")
-        exit()
+        exit(-1)
     invokePipeline([
         [info.VSPIPE] + vapoursynth_pipeline,
         [encoder_binary] + encoder_params
     ])
     assertFileWithExit(output)
 
-def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
+def encodeAudio() -> None:
+    trimmedAudio = os.path.join(temporary, 'audio-trimmed.wav')
+    encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
     writeEventName('Recode audio data to AAC format with QAAC')
     invokePipeline([
         [info.FFMPEG, '-hide_banner', '-i', trimmedAudio, '-f', 'wav', '-vn', '-'],
@@ -106,13 +157,18 @@ def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
     ])
     assertFileWithExit(encodedAudio)
 
-def mkvMerge(output: str, encodedAudio: str, encodedVideo: str, title: str) -> None:
+def mkvMerge() -> None:
+    output = os.path.join(working_directory, content['output']['filename'])
+    encodedVideo = os.path.join(temporary, 'video-encoded.mp4')
+    encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
     writeEventName('Merge audio & video data with MKVMerge')
     merge = ['-o', output, encodedVideo, encodedAudio]
     invokePipeline([[info.MKVMERGE] + merge])
     assertFileWithExit(output)
 
 def mkvMetainfo(output: str, title: str) -> None:
+    title = content['title']
+    output = os.path.join(working_directory, content['output']['filename'])
     writeEventName('Edit video metainfo with MKVPropEdit')
     props = [
         output,
@@ -133,26 +189,18 @@ def cleanTemporaryFiles() -> None:
         os.makedirs(temporary)
 
 def missionComplete(output: str):
+    output = os.path.join(working_directory, content['output']['filename'])
     writeEventName('Mission Complete')
     invokePipeline([['mediainfo', output]])
 
 def main() -> None:
-    title = content['title'].format(**content)
-    output = content['output']['filename'].format(**content)
-
-    missionReport(title, output)
+    missionReport()
     precleanTemporaryFiles()
     precheckSubtitle()
-
-    output = path.join(getWorkingDirectory(), output)
-    encodedVideo = path.join(temporary, 'video-encoded.mp4')
-    trimmedAudio = path.join(temporary, 'audio-trimmed.wav')
-    encodedAudio = path.join(temporary, 'audio-encoded.m4a')
-
-    postProcessVideo(encodedVideo)
-    encodeAudio(trimmedAudio, encodedAudio)
-    mkvMerge(output, encodedAudio, encodedVideo, title)
-    mkvMetainfo(output, title)
+    processVideo()
+    encodeAudio()
+    mkvMerge()
+    mkvMetainfo()
     cleanTemporaryFiles()
-    missionComplete(output)
+    missionComplete()
 

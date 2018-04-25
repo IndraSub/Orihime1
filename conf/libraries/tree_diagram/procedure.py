@@ -123,14 +123,6 @@ def processVideo() -> None:
     os.environ['TDINFO'] = json.dumps(tdinfo)
     vapoursynth_pipeline = [
         '--y4m',
-        '--arg',
-        f'current_working={mission_path}',
-        '--arg',
-        f'temporary={temporary}',
-        '--arg',
-        f'ffmpeg={info.FFMPEG}',
-        '--arg',
-        f'mediainfo={info.MEDIAINFO}',
         os.path.join(info.root_directory, 'conf', 'misaka64.py'),
         '-',
     ]

@@ -4,6 +4,7 @@ import os
 import sys
 import subprocess
 import xml.etree.ElementTree as ET
+import json
 
 class TrimFrames:
     def __init__(self, frames):
@@ -20,15 +21,16 @@ class TrimFrames:
 
 
 class TrimAudio:
-    def __init__(self, enabled, temporary, ffmpeg, mediainfo, file, frames):
+    def __init__(self, enabled, file, frames):
         self.enabled = enabled
         if enabled and len(frames) == 0:
             raise ConfigureError('TrimFrames: frames length is 0')
         self.frames = frames
         self.file = get_working_directory(file)
-        self.temporary = temporary
-        self.ffmpeg = ffmpeg
-        self.mediainfo = mediainfo
+        info = json.loads(os.environ['TDINFO'])
+        self.temporary = info.temporary
+        self.ffmpeg = info.FFMPEG
+        self.mediainfo = info.MEDIAINFO
 
     def getAudioDelay(self) -> int:
         xmlstr = subprocess.run([

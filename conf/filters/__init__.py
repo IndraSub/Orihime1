@@ -23,8 +23,8 @@ def makeTrimFrames(enabled, trim_frames):
         return
     return TrimFrames(trim_frames)
 
-def makeTrimAudio(enabled, temporary, ffmpeg, mediainfo, file, trim_frames):
-    return TrimAudio(enabled, temporary, ffmpeg, mediainfo, file, trim_frames)
+def makeTrimAudio(enabled, file, trim_frames):
+    return TrimAudio(enabled, file, trim_frames)
 
 def makePostProcess(method, configure):
     if method is False:

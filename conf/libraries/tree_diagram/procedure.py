@@ -79,7 +79,7 @@ def missionReport() -> None:
     answer = choices(message, options, 1)
     if answer == 1:
         exit()
-getMissionFilePath
+
 def precleanTemporaryFiles() -> None:
     writeEventName('Checking temporary files')
     if not path.exists(temporary):

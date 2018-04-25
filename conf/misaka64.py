@@ -3,27 +3,14 @@ import json
 import os
 import sys
 import time
+import json
 
 import vapoursynth
 
 sys.path.insert(0, os.path.realpath('.'))
-sys.path.append(os.path.realpath('./libraries/yaml.zip'))
-sys.path.append(os.path.realpath('./libraries/vapoursynth_tools.zip'))
-
 
 def load_working_content():
-    import yaml
-    from filters.utils import get_working_directory
-
-    working = get_working_directory(current_working.decode())
-    working = yaml.load(open(working).read())
-
-    working['project'] = get_working_directory(working['project'])
-    working['project'] = yaml.load_all(open(working['project']).read())
-    working['project'] = next(project for project in working['project']
-                              if project['quality'] == working['quality'])
-    return working
-
+    return json.loads(os.environ['TDINFO'])['content']
 
 def make_tasks(configure):
     from filters import (Dering, EdgeRefine, LineClearness, LineSharp, Source,
@@ -33,11 +20,6 @@ def make_tasks(configure):
                          makePostProcess, makeResolution, makeSubtitle, makeTrimFrames, makeTrimAudio)
 
     source = configure['source']
-    # replace variables in source
-    if 'filename' in source:
-        source['filename'] = source['filename'].format(**configure)
-    if 'subtitle' in source:
-        source['subtitle']['filename'] = source['subtitle']['filename'].format(**configure)
     flow = configure['project']['flow']
     filter_conf = configure['project']['filter_configure']
     trim_frames = source.get('trim_frames', [])

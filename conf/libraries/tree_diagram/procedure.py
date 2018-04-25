@@ -6,6 +6,7 @@ import sys
 import shutil
 import io
 import logging
+import json
 
 from . import info
 from .kit import writeEventName, padUnicode, choices
@@ -117,6 +118,7 @@ def precheckSubtitle() -> None:
 def processVideo() -> None:
     output = os.path.join(temporary, 'video-encoded.mp4')
     writeEventName('Post-process with VapourSynth & Rip video data with x265')
+    os.environ['TDINFO'] = json.dumps(info)
     vapoursynth_pipeline = [
         '--y4m',
         '--arg',

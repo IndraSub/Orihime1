@@ -364,7 +364,10 @@ def saveBinCache():
 
 def precheck() -> None:
     global windir
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    if 'TDDEBUG' in os.environ and os.environ['TDDEBUG'] == '1':
+        logging.basicConfig(level=logging.DEBUG, format='%(message)s')
+    else:
+        logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     checkSystem()
     setRootDirectory()

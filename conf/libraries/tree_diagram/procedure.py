@@ -43,8 +43,8 @@ with open(os.path.join(working_directory, content['project']), encoding='utf8') 
 content['title'] = content['title'].format(**content)
 content['source']['filename'] = content['source']['filename'].format(**content)
 content['output']['filename'] = content['output']['filename'].format(**content)
-if 'subtitle' in content:
-    content['subtitle']['filename'] = content['subtitle']['filename'].format(**content)
+if 'subtitle' in content['source']:
+    content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
 
 info.working_directory = working_directory
 info.current_working = mission_path
@@ -66,8 +66,8 @@ def missionReport() -> None:
         {"Source": os.path.join(working_directory, content['source']['filename'])}
     ]
     report += [
-        {"Subtitle": os.path.join(working_directory, content['subtitle']['filename'])}
-    ] if 'subtitle' in content else []
+        {"Subtitle": os.path.join(working_directory, content['source']['subtitle']['filename'])}
+    ] if 'subtitle' in content['source'] else []
     report += [
         {"Output": os.path.join(working_directory, content['output']['filename'])},
     ]

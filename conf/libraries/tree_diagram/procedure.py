@@ -161,7 +161,7 @@ def mkvMerge() -> None:
     invokePipeline([[info.MKVMERGE] + merge])
     assertFileWithExit(output)
 
-def mkvMetainfo(output: str, title: str) -> None:
+def mkvMetainfo() -> None:
     title = content['title']
     output = os.path.join(working_directory, content['output']['filename'])
     writeEventName('Edit video metainfo with MKVPropEdit')
@@ -183,7 +183,7 @@ def cleanTemporaryFiles() -> None:
         shutil.rmtree(temporary)
         os.makedirs(temporary)
 
-def missionComplete(output: str):
+def missionComplete():
     output = os.path.join(working_directory, content['output']['filename'])
     writeEventName('Mission Complete')
     invokePipeline([['mediainfo', output]])

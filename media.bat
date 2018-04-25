@@ -3,6 +3,6 @@ CHCP 65001
 MODE CON COLS=127
 PUSHD %~dp0
 TITLE INDRA Rip Tools
-python -m conf.libraries.tree_diagram
+python -m libraries.tree_diagram
 POPD
 PAUSE

@@ -22,8 +22,10 @@ def invokePipeline(pipeline: List[List[str]]) -> None:
         processes.append(Popen(args=cmd, stdin=stdin, stdout=stdout, bufsize=0))
         if stdin:
             stdin.close()
-    processes[-1].wait()
-    # last process exited, terminate all processes if still running
-    for proc in processes:
-        if proc.poll() is None:
-            proc.terminate()
+    try:
+        processes[-1].wait()
+    finally:
+        # last process exited or external interruption, terminate all processes if still running
+        for proc in processes:
+            if proc.poll() is None:
+                proc.terminate()

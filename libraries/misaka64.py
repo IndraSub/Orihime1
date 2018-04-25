@@ -7,8 +7,6 @@ import json
 
 import vapoursynth
 
-sys.path.insert(0, os.path.realpath('.'))
-
 def load_working_content():
     return json.loads(os.environ['TDINFO'])['content']
 

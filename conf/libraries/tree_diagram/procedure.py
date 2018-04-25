@@ -100,7 +100,7 @@ def precheckSubtitle() -> None:
     if 'subtitle' not in content['source'] or not content['source']['subtitle']:
         return
     writeEventName('Checking if all fonts are installed')
-    subtitle = os.path.join(getWorkingDirectory(), content['source']['subtitle']['filename'])
+    subtitle = os.path.join(working_directory, content['source']['subtitle']['filename'])
     fonts = checkAssFonts(subtitle)
     all_installed = True
     print('{:16}{:<32}{:<16}'.format('', 'FontFamily', 'IsInstalled'))

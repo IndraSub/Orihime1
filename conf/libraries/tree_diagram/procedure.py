@@ -118,7 +118,9 @@ def precheckSubtitle() -> None:
 def processVideo() -> None:
     output = os.path.join(temporary, 'video-encoded.mp4')
     writeEventName('Post-process with VapourSynth & Rip video data with x265')
-    os.environ['TDINFO'] = json.dumps(info)
+    tdinfo = dict(info)
+    tdinfo['binaries'] = None # avoid envvar growing too large
+    os.environ['TDINFO'] = json.dumps(tdinfo)
     vapoursynth_pipeline = [
         '--y4m',
         '--arg',

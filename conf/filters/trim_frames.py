@@ -28,9 +28,9 @@ class TrimAudio:
         self.frames = frames
         self.file = get_working_directory(file)
         info = json.loads(os.environ['TDINFO'])
-        self.temporary = info.temporary
-        self.ffmpeg = info.FFMPEG
-        self.mediainfo = info.MEDIAINFO
+        self.temporary = info['temporary']
+        self.ffmpeg = info['FFMPEG']
+        self.mediainfo = info['MEDIAINFO']
 
     def getAudioDelay(self) -> int:
         xmlstr = subprocess.run([

@@ -61,7 +61,7 @@ def missionReport() -> None:
     writeEventName('Mission Report')
 
     report = [
-        {'Title': title},
+        {'Title': content['title']},
         {"Temporary Files": path.join(working_directory, 'temporary')},
         {"Quality": content['quality']},
         {"Source": path.join(working_directory, content['source']['filename'])}

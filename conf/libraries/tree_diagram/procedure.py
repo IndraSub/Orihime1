@@ -198,4 +198,3 @@ def main() -> None:
     mkvMetainfo()
     cleanTemporaryFiles()
     missionComplete()
-

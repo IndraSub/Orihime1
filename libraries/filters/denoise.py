@@ -90,7 +90,7 @@ def Waifu2xCaffe(core, clip, noise, block, model, cudnn, processor, tta, multi_t
             create_filter(rgbs.std.SelectEvery(cycle=threads, offsets=i * devices + p), p)
             for i in range(0, threads_per_device)
             for p in range(0, devices)
-        ])
+        ]) if threads > 1 else create_filter(rgbs, processor)
     yuv = mvf.ToYUV(exp, css="444", full=False)
     yuv = mvf.Depth(yuv, depth=16, fulls=True, fulld=True, dither=3)
     dei16 = core.resize.Bicubic(clip, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")

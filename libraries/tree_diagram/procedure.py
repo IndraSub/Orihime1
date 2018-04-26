@@ -31,7 +31,7 @@ with open(missions_path, encoding='utf8') as f:
 
 current_working = os.path.join(working_directory, missions['missions'][0]) #NOTE: Take value of index 0 is a workaround, will process all indexes in future!
 if not os.path.exists(current_working):
-    logger.critical(f'{path} not found')
+    logger.critical(f'{current_working} not found')
     exit(-1)
 
 with open(current_working, encoding='utf8') as f:

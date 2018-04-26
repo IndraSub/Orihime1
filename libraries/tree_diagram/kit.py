@@ -4,6 +4,9 @@ from typing import List
 from datetime import datetime
 import os
 import unicodedata
+import logging
+
+logger = logging.getLogger('tree_diagram')
 
 def writeEventName(title: str) -> None:
     print('-' * 126)

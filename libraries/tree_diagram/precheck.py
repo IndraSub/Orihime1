@@ -481,6 +481,6 @@ def precheck() -> None:
         info.vsfilters = findVSPlugins()
     if not info.avsfilters:
         info.avsfilters = findAVSPlugins()
-    print(f'Num of VapourSynth plugins found: {len(info.vsfilters)}')
-    print(f'Num of AviSynth plugins found: {len(info.avsfilters)}')
+    print(f'VAPOURSYNTH PLUGINS #: {len(info.vsfilters)}')
+    print(f'AVISYNTH PLUGINS #: {len(info.avsfilters)}')
     saveBinCache()

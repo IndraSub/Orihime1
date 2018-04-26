@@ -19,7 +19,6 @@ class Info(dict):
         self.__dict__ = self
 
 info = Info()
-info.binaries = {}
 
 def addPath(path: str) -> None:
     if not os.path.isdir(path):
@@ -336,13 +335,50 @@ def checkExecutables(executables: List[ExecDescription]) -> None:
 def findVSPlugins() -> List[str]:
     result = []
     plugin_dir = os.path.join(info.root_directory, 'bin', info.system.lower(), 'filter_plugins', 'vs')
+    init_names = {'VapourSynthPluginInit', '_VapourSynthPluginInit@12'}
     for root, dirs, files in os.walk(plugin_dir):
         for name in files:
             path = os.path.join(root, name)
             if path.lower().endswith('.dll') or (info.system == 'Linux' and path.endswith('.so')):
                 loadBinaryInfo(path)
                 fileinfo = info.binaries[path]
-                if 'VapourSynthPluginInit' in fileinfo['exports']:
+                if 'exports' not in fileinfo:
+                    continue
+                isPlugin = False
+                for func_name in fileinfo['exports']:
+                    if func_name in init_names:
+                        isPlugin = True
+                        break
+                if isPlugin:
+                    result.append(path)
+                    depinfo = queryDependency(path)
+                    if depinfo:
+                        logger.warn(path + ':')
+                        for l in depinfo:
+                            logger.warn(f'    {l}')
+    return result
+
+def findAVSPlugins() -> List[str]:
+    result = []
+    plugin_dir = os.path.join(info.root_directory, 'bin', info.system.lower(), 'filter_plugins', 'avs')
+    init_names = {
+        'AvisynthPluginInit3', '_AvisynthPluginInit3@8',
+        'AvisynthPluginInit2', '_AvisynthPluginInit2@4',
+    }
+    for root, dirs, files in os.walk(plugin_dir):
+        for name in files:
+            path = os.path.join(root, name)
+            if path.lower().endswith('.dll') or (info.system == 'Linux' and path.endswith('.so')):
+                loadBinaryInfo(path)
+                fileinfo = info.binaries[path]
+                if 'exports' not in fileinfo:
+                    continue
+                isPlugin = False
+                for func_name in fileinfo['exports']:
+                    if func_name in init_names:
+                        isPlugin = True
+                        break
+                if isPlugin:
                     result.append(path)
                     depinfo = queryDependency(path)
                     if depinfo:
@@ -355,12 +391,21 @@ def loadBinCache():
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')
     if os.path.exists(cachepath):
         with open(cachepath, 'r') as f:
-            info.binaries = json.loads(f.read())
+            cache = json.loads(f.read())
+            info.binaries = cache.get('binaries', {})
+            info.vsfilters = cache.get('vsfilters', [])
+            info.avsfilters = cache.get('avsfilters', [])
+    else:
+        print('Cache file not found, it may take some time to analyze binary files')
 
 def saveBinCache():
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')
     with open(cachepath, 'w') as f:
-        f.write(json.dumps(info.binaries))
+        f.write(json.dumps({
+            'binaries': info.binaries,
+            'vsfilters': info.vsfilters,
+            'avsfilters': info.avsfilters,
+        }))
 
 def precheck() -> None:
     global windir
@@ -431,4 +476,10 @@ def precheck() -> None:
         ]
     checkExecutables(executables)
 
+    if not info.vsfilters:
+        info.vsfilters = findVSPlugins()
+    if not info.avsfilters:
+        info.avsfilters = findAVSPlugins()
+    print(f'Num of VapourSynth plugins found: {len(info.vsfilters)}')
+    print(f'Num of AviSynth plugins found: {len(info.avsfilters)}')
     saveBinCache()

@@ -21,20 +21,20 @@ logger = logging.getLogger('tree_diagram')
 working_directory = os.path.join(info.root_directory, 'episodes')
 temporary = os.path.join(working_directory, 'temporary')
 
-worklist_path = os.path.join(working_directory, 'missions.yaml')
-if not os.path.exists(worklist_path):
-    logger.critical(f'{worklist_path} not found')
+missions_path = os.path.join(working_directory, 'missions.yaml')
+if not os.path.exists(missions_path):
+    logger.critical(f'{missions_path} not found')
     exit(-1)
 
-with open(worklist_path, encoding='utf8') as f:
-    worklist = yaml.load(f)
+with open(missions_path, encoding='utf8') as f:
+    missions = yaml.load(f)
 
-mission_path = os.path.join(working_directory, worklist['missions'][0]) #NOTE: Take value of index 0 is a workaround, will process all indexes in future!
-if not os.path.exists(mission_path):
+current_working = os.path.join(working_directory, missions['missions'][0]) #NOTE: Take value of index 0 is a workaround, will process all indexes in future!
+if not os.path.exists(current_working):
     logger.critical(f'{path} not found')
     exit(-1)
 
-with open(mission_path, encoding='utf8') as f:
+with open(current_working, encoding='utf8') as f:
     content = yaml.load(f)
 
 with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
@@ -49,9 +49,10 @@ if 'subtitle' in content['source'] and content['source']['subtitle']:
     content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
 
 info.working_directory = working_directory
-info.current_working = mission_path
+info.current_working = current_working
 info.temporary = temporary
 info.content = content
+info.autorun = missions.get('autorun')
 
 def missionReport() -> None:
     writeEventName('Mission Report')
@@ -70,9 +71,13 @@ def missionReport() -> None:
     ]
 
     yaml.dump(report, sys.stdout, default_flow_style=False)
+
     message = 'Type your decision:'
     options = ['&Confirm', 'E&xit']
-    answer = choices(message, options, 1)
+    output = os.path.join(working_directory, content['output']['filename'])
+    answer = 0 if not os.path.exists(output) else 1
+    if not info.autorun:
+        answer = choices(message, options, answer)
     if answer == 1:
         exit()
 
@@ -86,7 +91,9 @@ def precleanTemporaryFiles() -> None:
     else:
         message = 'Temporary files exist, the previous task may not finished normally. Do you want to clear them?'
         options = ['&Confirm', 'E&xit']
-        answer = choices(message, options, 1)
+        answer = 1
+        if not info.autorun:
+            answer = choices(message, options, answer)
         if answer == 0:
             shutil.rmtree(temporary)
             os.makedirs(temporary)
@@ -107,7 +114,9 @@ def precheckSubtitle() -> None:
         all_installed = all_installed and f['IsInstalled']
     message = 'Please make sure that all fonts are installed'
     options = ['&Confirm', 'E&xit']
-    answer = choices(message, options, 0 if all_installed else 1)
+    answer = 0 if all_installed else 1
+    if not all_installed and not info.autorun:
+        answer = choices(message, options, answer)
     if answer == 1:
         exit()
 
@@ -177,7 +186,9 @@ def cleanTemporaryFiles() -> None:
     writeEventName('Clean Temporary Files')
     message = 'Processing flow completed, you may want to take a backup of mission temporary files.'
     options = ['&Clear', '&Reserve']
-    answer = choices(message, options, 1)
+    answer = 0
+    if not info.autorun:
+        answer = choices(message, options, answer)
     if answer == 0:
         shutil.rmtree(temporary)
         os.makedirs(temporary)

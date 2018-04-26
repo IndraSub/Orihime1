@@ -14,7 +14,7 @@ def getAssFontsList(filename: str) -> List[str]:
             # format is normally ignored
             fontnames.append(l[6:].strip().split(',')[1])
         elif l.lower().startswith('dialogue:'):
-            fontnames += re.findall(r'{\\fn([^{}]+)}', l)
+            fontnames += re.findall(r'{\\fn([^{}\\]+)[^{}]*}', l)
     return list(set(fontnames))
 
 def checkFontLinux(fontname: str) -> bool:

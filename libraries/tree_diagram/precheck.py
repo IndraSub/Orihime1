@@ -389,14 +389,15 @@ def findAVSPlugins() -> List[str]:
 
 def loadBinCache():
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')
+    cache = {}
     if os.path.exists(cachepath):
         with open(cachepath, 'r') as f:
             cache = json.loads(f.read())
-            info.binaries = cache.get('binaries', {})
-            info.vsfilters = cache.get('vsfilters', [])
-            info.avsfilters = cache.get('avsfilters', [])
     else:
         print('Cache file not found, it may take some time to analyze binary files')
+    info.binaries = cache.get('binaries', {})
+    info.vsfilters = cache.get('vsfilters', [])
+    info.avsfilters = cache.get('avsfilters', [])
 
 def saveBinCache():
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')

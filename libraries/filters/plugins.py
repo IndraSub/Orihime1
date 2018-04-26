@@ -9,13 +9,17 @@ import json
 info = json.loads(os.environ['TDINFO'])
 
 def load_plugins(core):
-    path = join(dirname(__file__), '..', '..', 'bin', platform.system().lower(), 'filter_plugins')
-    for name in info['vsfilters']:
+    for path in info['vsfilters']:
+        name = os.path.basename(path)
         print('[DEBUG][Plugin Loader] Loading VapourSynth plugin: '+name, file=sys.stderr)
         try:
-            core.std.LoadPlugin(join(path, 'vs', name))
+            core.std.LoadPlugin(path)
         except vs.Error as e:
             print(f'[DEBUG][Plugin Loader] Load {name} failed with error: '+str(e), file=sys.stderr)
-    for name in info['avsfilters']:
+    for path in info['avsfilters']:
+        name = os.path.basename(path)
         print('[DEBUG][Plugin Loader] Loading AviSynth plugin: '+name, file=sys.stderr)
-        core.avs.LoadPlugin(join(path, 'avs', name))
+        try:
+            core.avs.LoadPlugin(path)
+        except vs.Error as e:
+            print(f'[DEBUG][Plugin Loader] Load {name} failed with error: '+str(e), file=sys.stderr)

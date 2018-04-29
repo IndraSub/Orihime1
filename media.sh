@@ -5,4 +5,4 @@ script=$(readlink -f "$0")
 rootdir=$(dirname "$script")
 cd "$rootdir"
 python3 -m libraries.tree_diagram
-read -rsn1 -p "Press any key to continue"; echo
+read -rsn1 -p "Press any key to continue . . . "; echo

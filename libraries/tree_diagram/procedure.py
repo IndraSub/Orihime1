@@ -72,7 +72,7 @@ def missionReport() -> None:
 
     yaml.dump(report, sys.stdout, default_flow_style=False)
 
-    message = 'Output file exists, overwrite?'
+    message = 'Please confirm the mission'
     options = ['&Confirm', 'E&xit']
     output = os.path.join(working_directory, content['output']['filename'])
     answer = 0 if not os.path.exists(output) else 1

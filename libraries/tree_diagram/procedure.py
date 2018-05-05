@@ -76,10 +76,10 @@ def missionReport() -> None:
 
     yaml.dump(report, sys.stdout, default_flow_style=False)
 
+    output = os.path.join(working_directory, content['output']['filename'])
     output_exists = os.path.exists(output)
     message = 'Please confirm the mission:' if not output_exists else 'Output file already exists, OVERWRITE?'
     options = ['&Confirm', 'E&xit']
-    output = os.path.join(working_directory, content['output']['filename'])
     answer = 0 if not output_exists else 1
     if not info.autorun:
         answer = choices(message, options, answer)

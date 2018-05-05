@@ -29,13 +29,13 @@ if not os.path.exists(missions_path):
 with open(missions_path, encoding='utf8') as f:
     missions = yaml.load(f)
 
-current_working = None
-
 info.working_directory = working_directory
 info.temporary = temporary
 info.autorun = missions.get('autorun')
 
 def loadCurrentWorking(mission) -> None:
+    global current_working
+    global content
     current_working = os.path.join(working_directory, mission)
     if not os.path.exists(current_working):
         logger.critical(f'{current_working} not found')

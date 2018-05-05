@@ -29,30 +29,34 @@ if not os.path.exists(missions_path):
 with open(missions_path, encoding='utf8') as f:
     missions = yaml.load(f)
 
-current_working = os.path.join(working_directory, missions['missions'][0]) #NOTE: Take value of index 0 is a workaround, will process all indexes in future!
-if not os.path.exists(current_working):
-    logger.critical(f'{current_working} not found')
-    exit(-1)
-
-with open(current_working, encoding='utf8') as f:
-    content = yaml.load(f)
-
-with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
-    descriptions = yaml.load_all(f)
-    content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
-
-# replacements
-content['title'] = content['title'].format(**content)
-content['source']['filename'] = content['source']['filename'].format(**content)
-content['output']['filename'] = content['output']['filename'].format(**content)
-if 'subtitle' in content['source'] and content['source']['subtitle']:
-    content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
+current_working = None
 
 info.working_directory = working_directory
-info.current_working = current_working
 info.temporary = temporary
-info.content = content
 info.autorun = missions.get('autorun')
+
+def loadCurrentWorking(mission) -> None:
+    current_working = os.path.join(working_directory, mission)
+    if not os.path.exists(current_working):
+        logger.critical(f'{current_working} not found')
+        exit(-1)
+
+    with open(current_working, encoding='utf8') as f:
+        content = yaml.load(f)
+
+    with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
+        descriptions = yaml.load_all(f)
+        content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
+
+    # replacements
+    content['title'] = content['title'].format(**content)
+    content['source']['filename'] = content['source']['filename'].format(**content)
+    content['output']['filename'] = content['output']['filename'].format(**content)
+    if 'subtitle' in content['source'] and content['source']['subtitle']:
+        content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
+
+    info.current_working = current_working
+    info.content = content
 
 def missionReport() -> None:
     writeEventName('Mission Report')
@@ -183,12 +187,12 @@ def mkvMetainfo() -> None:
     invokePipeline([[info.MKVPROPEDIT] + props])
     assertFileWithExit(output)
 
-def cleanTemporaryFiles() -> None:
+def cleanTemporaryFiles(force=False) -> None:
     writeEventName('Clean Temporary Files')
     message = 'Processing flow completed, you may want to take a backup of mission temporary files.'
     options = ['&Clear', '&Reserve']
     answer = 0
-    if not info.autorun:
+    if not info.autorun and not force:
         answer = choices(message, options, answer)
     if answer == 0:
         shutil.rmtree(temporary)
@@ -200,12 +204,16 @@ def missionComplete():
     invokePipeline([[info.MEDIAINFO, output]])
 
 def main() -> None:
-    missionReport()
-    precheckSubtitle()
+    for mission in missions['missions']:
+        loadCurrentWorking(mission)
+        missionReport()
+        precheckSubtitle()
     precleanTemporaryFiles()
-    processVideo()
-    processAudio()
-    mkvMerge()
-    mkvMetainfo()
-    cleanTemporaryFiles()
-    missionComplete()
+    for mission in missions['missions']:
+        loadCurrentWorking(mission)
+        processVideo()
+        processAudio()
+        mkvMerge()
+        mkvMetainfo()
+        cleanTemporaryFiles(force=True)
+        missionComplete()

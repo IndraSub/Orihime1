@@ -102,4 +102,6 @@ class Delogo:
             start, end = frames[index]
             last_frame = frame
             frame += int((end - start + 1) / 5 * 4)
+            if frame - off[index] <= last_frame:
+                continue
             yield last_frame, frame - off[index]

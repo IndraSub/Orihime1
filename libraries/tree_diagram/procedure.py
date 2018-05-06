@@ -131,7 +131,7 @@ def processVideo() -> None:
     tdinfo = dict(info)
     tdinfo['binaries'] = None # avoid envvar growing too large
     os.environ['TDINFO'] = json.dumps(tdinfo)
-    os.environ['DISAPLY'] = '' # workaround to avoid usage of X
+    os.environ['DISPLAY'] = '' # workaround to avoid usage of X
     vapoursynth_pipeline = [
         '--y4m',
         os.path.join(info.root_directory, 'libraries', 'misaka64.py'),

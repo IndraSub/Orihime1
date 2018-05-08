@@ -204,6 +204,43 @@ def missionComplete():
     writeEventName('Mission Complete')
     invokePipeline([[info.MEDIAINFO, output]])
 
+if 'telegram_bot_proxy' in missions:
+    import socks
+    import socket
+    host, port = missions['telegram_bot_proxy'].split(':')
+    port = int(port)
+    # NOTE: monkey patching
+    socks.set_default_proxy(socks.SOCKS5, host, port)
+    socket.socket = socks.socksocket
+
+def telegramReportBegin():
+    if 'telegram_bot_token' not in missions:
+        return
+    token = missions['telegram_bot_token']
+    chat = missions['telegram_bot_chat']
+    message = f'[{info.node}] Mission start: {content["title"]}'
+    import urllib, threading
+    postdata = urllib.parse.urlencode({
+        'chat_id': chat,
+        'text': message,
+    }).encode('utf8')
+    # NOTE: ignoring errors
+    threading.thread(target=urllib.request.urlopen, args=('https://api.telegram.org/' + token + '/sendMessage', postdata))
+
+def telegramReportEnd():
+    if 'telegram_bot_token' not in missions:
+        return
+    token = missions['telegram_bot_token']
+    chat = missions['telegram_bot_chat']
+    import urllib, threading
+    message = f'[{info.node}] Mission complete: {content["title"]}'
+    postdata = urllib.parse.urlencode({
+        'chat_id': chat,
+        'text': message,
+    }).encode('utf8')
+    # NOTE: ignoring errors
+    threading.thread(target=urllib.request.urlopen, args=('https://api.telegram.org/' + token + '/sendMessage', postdata))
+
 def main() -> None:
     for mission in missions['missions']:
         loadCurrentWorking(mission)
@@ -212,9 +249,11 @@ def main() -> None:
     precleanTemporaryFiles()
     for mission in missions['missions']:
         loadCurrentWorking(mission)
+        telegramReportBegin()
         processVideo()
         processAudio()
         mkvMerge()
         mkvMetainfo()
         cleanTemporaryFiles(force=True)
         missionComplete()
+        telegramReportEnd()

@@ -53,6 +53,7 @@ def checkSystem() -> None:
     plat_info = platform.uname()
     logger.info('PYTHON VERSION: {}'.format(sys.version.replace('\n', '')))
     logger.info(f'PYTHON EXECUTABLE: {sys.executable}')
+    logger.info(f'NODE: {plat_info.node}')
     logger.info(f'SYSTEM: {plat_info.system}')
     if plat_info.system == 'Windows':
         release = plat_info.version
@@ -73,6 +74,7 @@ def checkSystem() -> None:
         passed = False
     if not passed:
         exit(-1)
+    info.node = plat_info.node
     info.system = plat_info.system
     info.system_version = release
     info.PYTHON = sys.executable

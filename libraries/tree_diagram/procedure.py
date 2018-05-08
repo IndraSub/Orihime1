@@ -219,7 +219,7 @@ def telegramReportBegin():
     token = missions['telegram_bot_token']
     chat = missions['telegram_bot_chat']
     message = f'[{info.node}] Mission start: {content["title"]}'
-    import urllib, threading
+    import urllib.parse, urllib.request, threading
     postdata = urllib.parse.urlencode({
         'chat_id': chat,
         'text': message,
@@ -232,7 +232,7 @@ def telegramReportEnd():
         return
     token = missions['telegram_bot_token']
     chat = missions['telegram_bot_chat']
-    import urllib, threading
+    import urllib.parse, urllib.request, threading
     message = f'[{info.node}] Mission complete: {content["title"]}'
     postdata = urllib.parse.urlencode({
         'chat_id': chat,

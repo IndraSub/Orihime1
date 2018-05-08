@@ -225,7 +225,7 @@ def telegramReportBegin():
         'text': message,
     }).encode('utf8')
     # NOTE: ignoring errors
-    threading.thread(target=urllib.request.urlopen, args=('https://api.telegram.org/' + token + '/sendMessage', postdata))
+    threading.Thread(target=urllib.request.urlopen, args=('https://api.telegram.org/' + token + '/sendMessage', postdata))
 
 def telegramReportEnd():
     if 'telegram_bot_token' not in missions:
@@ -239,7 +239,7 @@ def telegramReportEnd():
         'text': message,
     }).encode('utf8')
     # NOTE: ignoring errors
-    threading.thread(target=urllib.request.urlopen, args=('https://api.telegram.org/' + token + '/sendMessage', postdata))
+    threading.Thread(target=urllib.request.urlopen, args=('https://api.telegram.org/' + token + '/sendMessage', postdata))
 
 def main() -> None:
     for mission in missions['missions']:

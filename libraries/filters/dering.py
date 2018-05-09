@@ -2,6 +2,8 @@ from vapoursynth_tools import havsfunc as haf
 
 
 class Dering:
+    def __init__(self, _):
+        pass
     def __call__(self, core, clip):
         return haf.HQDeringmod(
             clip,

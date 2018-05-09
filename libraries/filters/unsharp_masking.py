@@ -3,7 +3,7 @@ from vapoursynth_tools import finesharp as fs
 from .utils import ConfigureError
 
 class UnsharpMasking:
-    def __init__(self, strength, final):
+    def __init__(self, _, strength, final):
         self.strength = float(strength)
         self.final = float(final)
         if final >= 0.25:

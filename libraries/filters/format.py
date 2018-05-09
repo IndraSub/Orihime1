@@ -57,7 +57,7 @@ format_limits = ['HP_YUV420P8L',
 
 
 class Format:
-    def __init__(self, format):
+    def __init__(self, _, format):
         self.format = str(format)
         if format not in format_limits:
             message = 'Format: %r method not found (supports %s)' % (

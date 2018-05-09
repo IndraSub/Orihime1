@@ -9,7 +9,7 @@ from .utils import ConfigureError, get_working_directory
 
 
 class Delogo:
-    def __init__(self, logo_file, frames, autodetect=False, l=0, r=0, t=0, b=0):
+    def __init__(self, _, logo_file, frames, autodetect=False, l=0, r=0, t=0, b=0):
         if len(frames) == 0:
             raise ConfigureError('Delogo: frames length is 0')
         self.logo_file = get_working_directory(logo_file)

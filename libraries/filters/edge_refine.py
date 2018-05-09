@@ -4,6 +4,8 @@ from vapoursynth_tools import mvsfunc as mvf
 
 
 class EdgeRefine:
+    def __init__(self, _):
+        pass
     def __call__(self, core, clip):
         src16 = mvf.Depth(clip, depth=16, fulls=True)
         deb1 = muf.GradFun3(src16, 0.25)

@@ -4,10 +4,11 @@ import vapoursynth as vs
 from vapoursynth_tools import havsfunc as haf
 from vapoursynth_tools import mvsfunc as mvf
 
-from .utils import ConfigureError
+from .utils import ConfigureError, SimpleFilter
 
 
-def SMDegrain(core, clip):
+@SimpleFilter
+def SMDegrain(core, clip, _):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     dei16 = mvf.Depth(clip, depth=16, fulls=True)
@@ -29,7 +30,8 @@ def SMDegrain(core, clip):
     return rep16
 
 
-def SMDegrainFast(core, clip):
+@SimpleFilter
+def SMDegrainFast(core, clip, _):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     dei16 = mvf.Depth(clip, depth=16, fulls=True)
@@ -49,7 +51,8 @@ def SMDegrainFast(core, clip):
     return rep16
 
 
-def BM3D(core, clip, strength, radius, profile):
+@SimpleFilter
+def BM3D(core, clip, _, strength, radius, profile):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="full", filter_param_a=0, filter_param_b=0.5)
@@ -65,7 +68,8 @@ def BM3D(core, clip, strength, radius, profile):
     return rep16
 
 
-def Waifu2xCaffe(core, clip, noise, block, model, cudnn, processor, tta, multi_threads):
+@SimpleFilter
+def Waifu2xCaffe(core, clip, _, noise, block, model, cudnn, processor, tta, multi_threads):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="full", filter_param_a=0, filter_param_b=0.5)
@@ -99,7 +103,8 @@ def Waifu2xCaffe(core, clip, noise, block, model, cudnn, processor, tta, multi_t
     return rep16
 
 
-def Waifu2xW2XC(core, clip, noise, block, model_photo, processor, gpu, list_gpu):
+@SimpleFilter
+def Waifu2xW2XC(core, clip, _, noise, block, model_photo, processor, gpu, list_gpu):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="full", filter_param_a=0, filter_param_b=0.5)
@@ -121,7 +126,8 @@ def Waifu2xW2XC(core, clip, noise, block, model_photo, processor, gpu, list_gpu)
     return den16
 
 
-def VagueDenoiser(core, clip, strength, nsteps, csp):
+@SimpleFilter
+def VagueDenoiser(core, clip, _, strength, nsteps, csp):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     dei16 = mvf.Depth(clip, depth=16, fulls=True)
@@ -135,7 +141,8 @@ def VagueDenoiser(core, clip, strength, nsteps, csp):
     return rep16
 
 
-def MisakaDenoise(core, clip, v_strength, v_nsteps, v_csp, b_strength, b_radius, b_profile):
+@SimpleFilter
+def MisakaDenoise(core, clip, _, v_strength, v_nsteps, v_csp, b_strength, b_radius, b_profile):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     dei16 = mvf.Depth(clip, depth=16, fulls=True)
@@ -152,27 +159,3 @@ def MisakaDenoise(core, clip, v_strength, v_nsteps, v_csp, b_strength, b_radius,
     rep16 = core.rgvs.Repair(den16, dei16, mode=1)
     return rep16
 
-
-methods = {
-    'SMDegrainFast': SMDegrainFast,
-    'SMDegrain': SMDegrain,
-    'BM3D': BM3D,
-    'Waifu2xCaffe': Waifu2xCaffe,
-    'Waifu2xW2XC': Waifu2xW2XC,
-    'VagueDenoiser': VagueDenoiser,
-    'MisakaDenoise': MisakaDenoise,
-}
-
-
-class Denoise:
-    def __init__(self, method, params):
-        if method not in methods:
-            message = 'Denoise: %r method not found (supports %s)' % (
-                method,
-                ', '.join(methods.keys()), )
-            raise ConfigureError(message)
-        self.method = method
-        self.params = params
-
-    def __call__(self, core, clip):
-        return methods[self.method](core, clip, **self.params)

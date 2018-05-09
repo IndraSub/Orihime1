@@ -1,13 +1,15 @@
 from vapoursynth_tools import havsfunc as haf
 
-from .utils import ConfigureError
+from .utils import ConfigureError, SimpleFilter
 
 
-def IT(core, clip, fps):
+@SimpleFilter
+def IT(core, clip, _, fps):
     return core.it.IT(clip, fps=fps, threshold=20, pthreshold=75)
 
 
-def VIVTC(core, clip, field_order, mode):
+@SimpleFilter
+def VIVTC(core, clip, _, field_order, mode):
     matched_clip = core.vivtc.VFM(clip, order=field_order, mode=mode)
     deinterlaced_clip = core.eedi3.eedi3(matched_clip, field=1)
     callback = lambda n, f: deinterlaced_clip if f.props['_Combed'] > 0 else matched_clip
@@ -16,7 +18,8 @@ def VIVTC(core, clip, field_order, mode):
     return core.vivtc.VDecimate(processed_clip)
 
 
-def TIVTC(core, clip, field_order, matching_mode, process_speed,
+@SimpleFilter
+def TIVTC(core, clip, _, field_order, matching_mode, process_speed,
           post_process_mode):
     tfm = core.avs.TFM(
         clip,
@@ -27,7 +30,8 @@ def TIVTC(core, clip, field_order, matching_mode, process_speed,
     return core.avs.TDecimate(tfm)
 
 
-def QTGMC(core, clip, field_order, frame_rate_divisor):
+@SimpleFilter
+def QTGMC(core, clip, _, field_order, frame_rate_divisor):
     args = dict(
         Preset='Very Slow',
         InputType=0,
@@ -48,24 +52,3 @@ def QTGMC(core, clip, field_order, frame_rate_divisor):
         NoiseProcess=0, )
     return haf.QTGMC(clip, **args)
 
-
-methods = {
-    'IT': IT,
-    'VIVTC': VIVTC,
-    'TIVTC': TIVTC,
-    'QTGMC': QTGMC,
-}
-
-
-class PostProcess:
-    def __init__(self, method, params):
-        if method not in methods:
-            message = 'PostProcess: %r method not found (supports %s)' % (
-                method,
-                ', '.join(methods.keys()), )
-            raise ConfigureError(message)
-        self.method = method
-        self.params = params
-
-    def __call__(self, core, clip):
-        return methods[self.method](core, clip, **self.params)

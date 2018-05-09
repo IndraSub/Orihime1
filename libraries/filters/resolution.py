@@ -1,5 +1,5 @@
 class Resolution:
-    def __init__(self, width, height):
+    def __init__(self, _, width, height):
         self.width = int(width)
         self.height = int(height)
 

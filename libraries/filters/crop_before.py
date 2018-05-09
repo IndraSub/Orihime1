@@ -1,5 +1,5 @@
 class CropBefore:
-    def __init__(self, width, height):
+    def __init__(self, _, width, height):
         self.width = width
         self.height = height
 

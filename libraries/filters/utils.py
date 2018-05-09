@@ -5,6 +5,12 @@ import sys
 class ConfigureError(Exception):
     pass
 
+def SimpleFilter(filter_function):
+    def initializer(source, *args, **kwargs):
+        def caller(core, clip):
+            return filter_function(core, clip, source, *args, **kwargs)
+        return caller
+    return initializer
 
 def get_working_directory(*paths, is_exists=True):
     path = os.path.dirname(__file__)

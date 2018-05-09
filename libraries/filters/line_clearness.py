@@ -6,6 +6,8 @@ from vapoursynth_tools import mvsfunc as mvf
 from .utils import ConfigureError
 
 class LineClearness:
+    def __init__(self, _):
+        pass
     def __call__(self, core, clip):
         w = clip.width
         h = clip.height

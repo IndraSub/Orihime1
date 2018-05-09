@@ -7,43 +7,31 @@ import json
 
 import vapoursynth
 
+from .utils import ConfigureError
+
 def load_working_content():
     return json.loads(os.environ['TDINFO'])['content']
 
 def make_tasks(configure):
-    from filters import (Dering, EdgeRefine, LineClearness, LineSharp, Source,
-                         makeDeband, makeCropBefore, makeCropAfter,
-                         makeDelogo, makeDenoise, makeUpscale,
-                         makeUnsharpMasking, makeEnabled, makeFormat, makeMCFI,
-                         makePostProcess, makeResolution, makeSubtitle, makeTrimFrames, makeTrimAudio)
+    import filters
 
-    source = configure['source']
     flow = configure['project']['flow']
-    filter_conf = configure['project']['filter_configure']
-    trim_frames = source.get('trim_frames', [])
-    makeArgs = lambda name: (
-        flow.get(name, False),
-        filter_conf.get(name, {}), )
-    return (
-        Source(source['filename'], *makeArgs('Source')),
-        #makeTrimAudio(flow.get('TrimFrames', False), source['filename'], trim_frames), # now processed by tree_diagram
-        makeTrimFrames(flow.get('TrimFrames', False), trim_frames),
-        makePostProcess(*makeArgs('PostProcess')),
-        makeCropBefore(*makeArgs('CropBefore')),
-        makeDelogo(trim_frames, *makeArgs('Delogo')),
-        makeDenoise(*makeArgs('Denoise')),
-        makeUpscale(*makeArgs('Upscale')),
-        makeUnsharpMasking(*makeArgs('UnsharpMasking')),
-        makeEnabled(flow.get('Dering', False), Dering),
-        makeEnabled(flow.get('LineClearness', False), LineClearness),
-        makeEnabled(flow.get('EdgeRefine', False), EdgeRefine),
-        makeEnabled(flow.get('LineSharp', False), LineSharp),
-        makeMCFI(*makeArgs('MCFI')),
-        makeCropAfter(*makeArgs('CropAfter')),
-        makeResolution(*makeArgs('Resolution')),
-        makeSubtitle(source.get('subtitle'), configure),
-        makeDeband(flow.get('Deband', False)),
-        makeFormat(flow.get('Format', False)), )
+    tasks = []
+    for step in flow:
+        if type(step) is str:
+            step = {step: {}}
+        if len(step) != 1:
+            raise ConfigureError('[make_tasks] Less/More than one config in a single step, forget \'-\' ?')
+        filter_name = list(step)[0]
+        if not hasattr(filters, filter_name):
+            raise ConfigureError('[make_tasks] Filter \'{}\' not found'.format(filter_name))
+        filter_conf = step[filter_name]
+        if type(filter_conf) is list:
+            tasks.append(getattr(filters, filter_name)(configure, *filter_conf))
+        if type(filter_conf) is dict:
+            tasks.append(getattr(filters, filter_name)(configure, **filter_conf))
+        else:
+            tasks.append(getattr(filters, filter_name)(configure, filter_conf))
 
 
 def main():
@@ -59,8 +47,6 @@ def main():
 
     clip = None
     for task in make_tasks(configure):
-        if task is None:
-            continue
         clip = task(core, clip)
     print('[DEBUG][Core] Output clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
     video = core.resize.Point(clip, matrix_in_s="709")

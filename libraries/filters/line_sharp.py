@@ -1,4 +1,6 @@
 class LineSharp:
+    def __init__(self, _):
+        pass
     def __call__(self, core, clip):
         return core.warp.AWarpSharp2(
             clip,

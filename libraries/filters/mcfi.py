@@ -3,10 +3,11 @@ import vapoursynth as vs
 
 from vapoursynth_tools import mvsfunc as mvf
 
-from .utils import ConfigureError
+from .utils import ConfigureError, SimpleFilter
 
 
-def svp(core, clip, super_params, analyse_params, smoothfps_params):
+@SimpleFilter
+def SVP(core, clip, _, super_params, analyse_params, smoothfps_params):
     clip = core.fmtc.resample(clip, css="420", csp=vs.YUV420P16)
     clip = mvf.Depth(clip, depth=8, fulls=True)
     svp_super = core.svp1.Super(
@@ -30,21 +31,3 @@ def svp(core, clip, super_params, analyse_params, smoothfps_params):
         fpsden=smooth.fps_den, )
     return smooth
 
-
-methods = {
-    'SVP': svp,
-}
-
-
-class MCFI:
-    def __init__(self, method, params):
-        if method not in methods:
-            message = 'MCFI: %r method not found (supports %s)' % (
-                method,
-                ', '.join(methods.keys()), )
-            raise ConfigureError(message)
-        self.method = method
-        self.params = params
-
-    def __call__(self, core, clip):
-        return methods[self.method](core, clip, **self.params)

@@ -1,5 +1,5 @@
 class CropAfter:
-    def __init__(self, top, bottom):
+    def __init__(self, _, top, bottom):
         self.top = top
         self.bottom = bottom
 

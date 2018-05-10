@@ -11,7 +11,7 @@ from .format import Format
 from .mcfi import SVP
 from .post_process import IT, VIVTC, TIVTC, QTGMC
 from .resolution import Resolution
-from .source import LWLibavSource, LSMASHVideoSource, FFMS2Source, AVISource, MultiSource
+from .source import LWLibavSource, LSMASHVideoSource, FFMS2, AVISource, MultiSource
 from .subtitle import VSFilterMod, ASS, InfoText
 from .trim_frames import TrimFrames
 from .unsharp_masking import UnsharpMasking

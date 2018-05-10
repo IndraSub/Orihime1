@@ -31,7 +31,7 @@ def LSMASHVideoSource(core, source):
     return core.lsmas.LSMASHVideoSource(source)
 
 @SourceFilter
-def FFMS2Source(core, source):
+def FFMS2(core, source):
     return core.ffms2.Source(source)
 
 @SourceFilter

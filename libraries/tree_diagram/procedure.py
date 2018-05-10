@@ -164,7 +164,8 @@ def processAudio() -> None:
     trimmedAudio = os.path.join(temporary, 'audio-trimmed.wav')
     encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
     trim_frames = None
-    if content['project']['flow'].get('TrimFrames', False):
+    if any(f == 'TrimFrames' or (type(f) is dict and f.keys()[0] == 'TrimFrames')
+           for f in content['project']['flow']):
         trim_frames = content['source']['trim_frames']
     writeEventName('Trim audio & Encode')
     extractAudio(source, extractedAudio)

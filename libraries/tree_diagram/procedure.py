@@ -248,8 +248,8 @@ def telegramReportEnd():
     threading.Thread(target=urllib.request.urlopen, args=('https://api.telegram.org/bot' + token + '/sendMessage', postdata)).start()
 
 def main() -> None:
-    for mission in missions['missions']:
-        loadCurrentWorking(mission)
+    for idx in range(len(missions['missions'])):
+        loadCurrentWorking(idx)
         precheckOutput()
         precheckSubtitle()
     precleanTemporaryFiles()

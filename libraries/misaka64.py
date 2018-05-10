@@ -21,12 +21,12 @@ def make_tasks(configure):
         if type(step) is str:
             step = {step: {}}
         if len(step) != 1:
-            raise ConfigureError('[make_tasks] Less/More than one config in a single step, forget \'-\' ?')
+            raise ConfigureError('Tasks: Less/More than one config in a single step, forget \'-\' ?')
         filter_name = list(step)[0]
         if not hasattr(filters, filter_name):
-            raise ConfigureError('[make_tasks] Filter \'{}\' not found'.format(filter_name))
+            raise ConfigureError('Tasks: Filter \'{}\' not found'.format(filter_name))
         filter_conf = step[filter_name]
-        print(f'[make_tasks] Add filter: {filter_name}', file=sys.stderr)
+        print(f'[Debug][Tasks] Add filter: {filter_name}', file=sys.stderr)
         if type(filter_conf) is list:
             tasks.append(getattr(filters, filter_name)(configure, *filter_conf))
         elif type(filter_conf) is dict:

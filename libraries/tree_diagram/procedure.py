@@ -219,6 +219,12 @@ if 'telegram_bot_proxy' in missions:
     socks.set_default_proxy(socks.SOCKS5, host, port)
     socket.socket = socks.socksocket
 
+def wrappedUrlopen(*args, **kwargs):
+    try:
+        urllib.request.urlopen(*args, **kwargs)
+    except:
+        logger.warn(f'WARN: Failed to contact Telegram API')
+
 def telegramReportBegin():
     if 'telegram_bot_token' not in missions:
         return
@@ -231,7 +237,7 @@ def telegramReportBegin():
         'text': message,
     }).encode('utf8')
     # NOTE: ignoring errors
-    threading.Thread(target=urllib.request.urlopen, args=('https://api.telegram.org/bot' + token + '/sendMessage', postdata)).start()
+    threading.Thread(target=wrappedUrlopen, args=('https://api.telegram.org/bot' + token + '/sendMessage', postdata)).start()
 
 def telegramReportEnd():
     if 'telegram_bot_token' not in missions:
@@ -245,7 +251,7 @@ def telegramReportEnd():
         'text': message,
     }).encode('utf8')
     # NOTE: ignoring errors
-    threading.Thread(target=urllib.request.urlopen, args=('https://api.telegram.org/bot' + token + '/sendMessage', postdata)).start()
+    threading.Thread(target=wrappedUrlopen, args=('https://api.telegram.org/bot' + token + '/sendMessage', postdata)).start()
 
 def main() -> None:
     for idx in range(len(missions['missions'])):

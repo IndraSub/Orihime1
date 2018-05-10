@@ -1,6 +1,6 @@
 from .crop_after import CropAfter
 from .crop_before import CropBefore
-from .deband import Deband
+from .deband import f3kdb
 from .delogo import Delogo
 from .denoise import SMDegrain, SMDegrainFast, BM3D, Waifu2xCaffe, Waifu2xW2XC, VagueDenoiser, MisakaDenoise
 from .dering import Dering

@@ -7,7 +7,7 @@ import json
 
 import vapoursynth
 
-from .utils import ConfigureError
+from filters.utils import ConfigureError
 
 def load_working_content():
     return json.loads(os.environ['TDINFO'])['content']
@@ -26,9 +26,10 @@ def make_tasks(configure):
         if not hasattr(filters, filter_name):
             raise ConfigureError('[make_tasks] Filter \'{}\' not found'.format(filter_name))
         filter_conf = step[filter_name]
+        print(f'[make_tasks] Add filter: {filter_name}', file=sys.stderr)
         if type(filter_conf) is list:
             tasks.append(getattr(filters, filter_name)(configure, *filter_conf))
-        if type(filter_conf) is dict:
+        elif type(filter_conf) is dict:
             tasks.append(getattr(filters, filter_name)(configure, **filter_conf))
         else:
             tasks.append(getattr(filters, filter_name)(configure, filter_conf))

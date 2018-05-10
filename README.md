@@ -2,14 +2,15 @@
 
 ### Welcome to the TreeDiagram branch!
 
-This branch is aimed to create a Linux-compatible version of Orihime1.
+Welcome to the next version of Orihime1.
+
+This branch is aimed to create a modern & cross-platform version of Orihime1.
 
 ### Main Features
 
-- All scripts in written in Python, friendly to deploy and maintenance.
-- Use a flexible method to load filter libraries - from binaries pack or system PATHs.
-- Completely deprecated AviSynth, thank you and R.I.P.!
-- Replace more components with Linux-compatible alternates.
+- All the cool new features under development and testing
+- Complete Linux support
+- No longer needs Avisynth, clean and lightweight
 
 ------
 

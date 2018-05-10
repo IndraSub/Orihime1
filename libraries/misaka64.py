@@ -33,7 +33,7 @@ def make_tasks(configure):
             tasks.append(getattr(filters, filter_name)(configure, **filter_conf))
         else:
             tasks.append(getattr(filters, filter_name)(configure, filter_conf))
-
+    return tasks
 
 def main():
     from filters.plugins import load_plugins

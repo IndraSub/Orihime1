@@ -33,10 +33,10 @@ info.working_directory = working_directory
 info.temporary = temporary
 info.autorun = missions.get('autorun')
 
-def loadCurrentWorking(mission) -> None:
+def loadCurrentWorking(idx: int) -> None:
     global current_working
     global content
-    current_working = os.path.join(working_directory, mission)
+    current_working = os.path.join(working_directory, missions['missions'][idx])
     if not os.path.exists(current_working):
         logger.critical(f'{current_working} not found')
         exit(-1)
@@ -76,15 +76,20 @@ def missionReport() -> None:
 
     yaml.dump(report, sys.stdout, default_flow_style=False)
 
+def precheckOutput() -> None:
+    writeEventName('Checking output file')
     output = os.path.join(working_directory, content['output']['filename'])
     output_exists = os.path.exists(output)
-    message = 'Please confirm the mission:' if not output_exists else 'Output file already exists, OVERWRITE?'
-    options = ['&Confirm', 'E&xit']
-    answer = 0 if not output_exists else 1
-    if not info.autorun:
-        answer = choices(message, options, answer)
-    if answer == 1:
-        exit()
+    if not output_exists:
+        print('Output is clean.')
+    else:
+        message = 'Output file already exists, OVERWRITE?'
+        options = ['&Confirm', 'E&xit']
+        answer = 1
+        if not info.autorun:
+            answer = choices(message, options, answer)
+        if answer == 1:
+            exit()
 
 def precleanTemporaryFiles() -> None:
     writeEventName('Checking temporary files')
@@ -244,11 +249,12 @@ def telegramReportEnd():
 def main() -> None:
     for mission in missions['missions']:
         loadCurrentWorking(mission)
-        missionReport()
+        precheckOutput()
         precheckSubtitle()
     precleanTemporaryFiles()
-    for mission in missions['missions']:
-        loadCurrentWorking(mission)
+    for idx in range(len(missions['missions'])):
+        loadCurrentWorking(idx)
+        missionReport()
         telegramReportBegin()
         processVideo()
         processAudio()

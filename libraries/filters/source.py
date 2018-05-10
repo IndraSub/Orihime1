@@ -2,7 +2,7 @@ import sys
 
 from vapoursynth_tools import mvsfunc as mvf
 
-from .utils import ConfigureError, SimpleFilter, get_working_directory
+from .utils import ConfigureError, SimpleFilter, get_working_directory, merge_clips
 
 def SourceFilter(filter_func):
     @SimpleFilter
@@ -38,3 +38,22 @@ def FFMS2Source(core, source):
 def AVISource(core, source):
     return core.avisource.AVISource(source)
 
+@SimpleFilter
+def MultiSource(core, clip, configure, source_filter, range):
+    sf = None
+    if source_filter == 'LWLibavSource':
+        sf = core.lsmas.LWLibavSource
+    elif source_filter == 'LSMASHVideoSource':
+        sf = core.lsmas.LSMASHVideoSource
+    elif source_filter == 'FFMS2Source':
+        sf = core.ffms2.Source
+    elif source_filter == 'AVISource':
+        sf = core.avisource.AVISource
+    else:
+        raise ConfigureError(f'[Source] Cannot find source filter: {source_filter}')
+    clips = [sf(get_working_directory(filename)) for filename in configure['source']['filenames']]
+    clip = merge_clips(clips)
+    print('[DEBUG][Source] Input clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
+    clip = core.fmtc.resample(clip, css="420")
+    clip = mvf.Depth(clip, depth=8, fulls=range, fulld=True, dither=3)
+    return clip

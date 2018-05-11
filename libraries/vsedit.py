@@ -27,6 +27,9 @@ project:
     vs_max_cache_size: 8192
   flow:
     # your filter confs here
+source:
+  filename: # source file here
+  # other source confs here
 ''')
 
 os.environ['TDINFO'] = json.dumps(yaml.load('''

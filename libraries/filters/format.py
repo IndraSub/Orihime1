@@ -8,6 +8,8 @@ format_limits = ['HP_YUV420P8L',
                  'HP_YUV420P8F',
                  'HP_YUV420P10L',
                  'HP_YUV420P10F',
+                 'HP_YUV420P12L',
+                 'HP_YUV420P12F',
                  
                  'GRAY8',
                  'GRAY16',
@@ -78,6 +80,12 @@ class Format:
         elif self.format == 'HP_YUV420P10F':
             clip = mvf.ToYUV(clip, css="420", full=True)
             clip = mvf.Depth(clip, depth=10, fulls=True, fulld=True, dither=3)
+        elif self.format == 'HP_YUV420P12L':
+            clip = mvf.ToYUV(clip, css="420", full=True)
+            clip = mvf.Depth(clip, depth=12, fulls=True, fulld=False, dither=3)
+        elif self.format == 'HP_YUV420P12F':
+            clip = mvf.ToYUV(clip, css="420", full=True)
+            clip = mvf.Depth(clip, depth=12, fulls=True, fulld=True, dither=3)
         else:
             clip = core.resize.Bicubic(clip, format=getattr(vs, self.format))
         return clip

@@ -12,8 +12,10 @@ root_directory = os.path.abspath(os.path.join(script_directory, '..'))
 sys.path.append(os.path.join(root_directory, 'libraries'))
 if sys.platform == 'linux':
     sys.path.append(os.path.join(root_directory, 'bin', 'linux', 'lib', 'python'))
+    os.environ['LD_LIBRARY_PATH'] = os.path.join(root_directory, 'bin', 'linux', 'lib') + os.pathsep + os.environ['LD_LIBRARY_PATH']
 else:
     sys.path.append(os.path.join(root_directory, 'bin', 'windows', 'lib', 'python'))
+    os.environ['PATH'] = os.path.join(root_directory, 'bin', 'windows', 'lib') + os.pathsep + os.environ['PATH']
 
 import yaml
 import vapoursynth

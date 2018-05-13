@@ -118,7 +118,7 @@ class Silence:
     def getparams(self):
         return self.params
     def readframes(self, start, n):
-        if start + n > self.params.nframes
+        if start + n > self.params.nframes:
             n = self.params.nframes - start
         return b'\x00' * (self.params.nchannels * self.params.sampwidth * n)
 

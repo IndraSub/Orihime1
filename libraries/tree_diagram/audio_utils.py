@@ -156,6 +156,9 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) 
             out = AudioTrim(src, -delay_samp)
     outfile = aifc.open(trimmedAudio, 'wb')
     outfile.setparams(out.getparams())
-    outfile.writeframes(out.readframes(0, out.getparams().nframes))
+    nframes = out.getparams().nframes
+    step = 1048576
+    for s in range(0, nframes, step):
+        outfile.writeframes(out.readframes(s, step))
     outfile.close()
     assertFileWithExit(trimmedAudio)

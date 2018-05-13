@@ -142,14 +142,14 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) 
     out = None
     if frames:
         for first, last in frames:
-            first_samp = first * params.framerate / fps - delay * params.framerate / 1000
-            last_samp = (last + 1) * params.framerate / fps - delay * params.framerate / 1000
+            first_samp = round(first * params.framerate / fps - delay * params.framerate / 1000)
+            last_samp = round((last + 1) * params.framerate / fps - delay * params.framerate / 1000)
             if out is None:
                 out = AudioTrim(src, first_samp, last_samp)
             else:
                 out = AudioConcat(out, AudioTrim(src, first_samp, last_samp))
     else:
-        delay_samp = delay * params.framerate / 1000
+        delay_samp = round(delay * params.framerate / 1000)
         if delay_samp > 0:
             out = AudioConcat(Silence(wave_params(**{**params._asdict(), 'nframes': delay_samp})), src)
         else:

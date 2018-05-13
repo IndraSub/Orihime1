@@ -2,7 +2,7 @@
 
 import subprocess
 import xml.etree.ElementTree as ET
-import wave
+import wave, aifc
 import collections
 
 from . import info
@@ -39,7 +39,7 @@ def getSourceInfo(source: str) -> int:
 def extractAudio(source: str, extractedAudio: str) -> None:
     print('Extracting audio file, this may take a while on long videos...')
     invokePipeline([
-        [info.FFMPEG, '-hide_banner', '-i', source, '-vn', '-acodec', 'pcm_s16le', '-f', 'wav', extractedAudio]
+        [info.FFMPEG, '-hide_banner', '-i', source, '-vn', '-acodec', 'pcm_s16le', '-f', 'aiff', extractedAudio]
     ])
     assertFileWithExit(extractedAudio)
 
@@ -57,9 +57,20 @@ class AudioProcessError(Exception):
 wave_params = collections.namedtuple('wave_params',
         ['nchannels', 'sampwidth', 'framerate', 'nframes', 'comptype', 'compname'])
 
-class AudioSource:
+class AudioWavSource:
     def __init__(self, wavfile):
         self.wav = wave.open(wavfile, 'rb')
+    def getparams(self):
+        return self.wav.getparams()
+    def readframes(self, start, n):
+        self.wav.setpos(start)
+        return self.wav.readframes(n)
+    def __del__(self):
+        self.wav.close()
+
+class AudioAiffSource:
+    def __init__(self, wavfile):
+        self.wav = aifc.open(wavfile, 'rb')
     def getparams(self):
         return self.wav.getparams()
     def readframes(self, start, n):
@@ -126,7 +137,7 @@ class Silence:
 def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) -> None:
     fps, delay = getSourceInfo(source)
     print('Trimming audio file...')
-    src = AudioSource(extractedAudio)
+    src = AudioAiffSource(extractedAudio)
     params = src.getparams()
     out = None
     if frames:

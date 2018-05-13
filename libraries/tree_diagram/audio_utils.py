@@ -71,11 +71,13 @@ class AudioTrim:
     def __init__(self, wav, start=0, end=None):
         if end is None:
             end = wav.getparams().nframes
+        params = wav.getparams()
+        if start < 0 or end < start or params.nframes < end:
+            raise AudioProcessError('Bad trim parameters')
         self.wav = wav
         self.start = start
         self.end = end
-        params = wav.getparams()
-        self.params = wave_params(**{**params, 'nframes': self.end - self.start})
+        self.params = wave_params(**{**params, 'nframes': self.end - self.start}
     def getparams(self):
         return self.params
     def readframes(self, start, n):

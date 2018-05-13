@@ -2,7 +2,7 @@
 
 import subprocess
 import xml.etree.ElementTree as ET
-import pydub
+import wave
 
 from . import info
 from .kit import assertFileWithExit
@@ -42,24 +42,6 @@ def extractAudio(source: str, extractedAudio: str) -> None:
     ])
     assertFileWithExit(extractedAudio)
 
-def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) -> None:
-    fps, delay = getSourceInfo(source)
-    print('Trimming audio file...')
-    src = pydub.AudioSegment.from_wav(extractedAudio)
-    segments = []
-    if frames:
-        for first, last in frames:
-            first_ms = first * 1000 / fps - delay
-            last_ms = (last + 1) * 1000 / fps - delay
-            segments.append(src[first_ms:last_ms])
-    else:
-        segments.append(src[-delay if delay < 0 else 0:]) # NOTE: prepending silence?
-    out = segments[0]
-    for item in segments[1:]:
-        out += item
-    out.export(trimmedAudio, format='wav')
-    assertFileWithExit(trimmedAudio)
-
 def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
     print('Recoding audio data to AAC format with QAAC')
     invokePipeline([
@@ -67,3 +49,99 @@ def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
         [info.QAAC, '--tvbr', '127', '--quality', '2', '--ignorelength', '-o', encodedAudio, '-'],
     ])
     assertFileWithExit(encodedAudio)
+
+class AudioProcessError(Exception):
+    pass
+
+wave_params = collections.namedtuple('wave_params',
+        ['nchannels', 'sampwidth', 'framerate', 'nframes', 'comptype', 'compname'])
+
+class AudioSource:
+    def __init__(self, wavfile):
+        self.wav = wave.open(wavfile, 'rb')
+    def getparams(self):
+        return self.wav.getparams()
+    def readframes(self, start, n):
+        self.wav.setpos(start)
+        return self.wav.readframes(n)
+    def __del__(self):
+        self.wav.close()
+
+class AudioTrim:
+    def __init__(self, wav, start=0, end=None):
+        if end is None:
+            end = wav.getparams().nframes
+        self.wav = wav
+        self.start = start
+        self.end = end
+        params = wav.getparams()
+        self.params = wave_params(**{**params, 'nframes': self.end - self.start})
+    def getparams(self):
+        return self.params
+    def readframes(self, start, n):
+        realstart = self.start + start
+        if realstart + n > self.end:
+            n = self.end - realstart
+        return self.wav.readframes(realstart, n)
+
+class AudioConcat:
+    def __init__(self, wav1, wav2):
+        self.wav1 = wav1
+        self.wav2 = wav2
+        params1 = wav1.getparams()
+        params2 = wav2.getparams()
+        if params1.nchannels != params2.nchannels or params1.sampwidth != params2.sampwidth or params1.framerate != params2.framerate:
+            raise AudioProcessError('Audio parameters mismatch')
+        self.nframes1 = params1.nframes
+        self.nframes2 = params2.nframes
+        self.params = wave_params(**{**params1, 'nframes': params1.nframes + params2.nframes})
+    def getparams(self):
+        return self.params
+    def readframes(self, start, n):
+        seg = b''
+        if start < self.nframes1:
+            read1 = n
+            if self.nframes1 - start < n:
+                read1 = self.nframes1 - start
+            seg += self.wav1.readframes(start, read1)
+            start += read1
+            n -= read1
+        if n > 0:
+            seg += self.wav2.readframes(start - self.nframes1, n)
+        return seg
+
+class Silence:
+    def __init__(self, params):
+        self.params = params
+    def getparams(self):
+        return self.params
+    def readframes(self, start, n):
+        if start + n > self.params.nframes
+            n = self.params.nframes - start
+        return b'\x00' * (self.params.nchannels * self.params.sampwidth * n)
+
+def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) -> None:
+    fps, delay = getSourceInfo(source)
+    print('Trimming audio file...')
+    src = AudioSource(extractedAudio)
+    params = src.getparams()
+    out = None
+    if frames:
+        for first, last in frames:
+            first_samp = first * params.framerate / fps - delay * params.framerate / 1000
+            last_samp = (last + 1) * params.framerate / fps - delay * params.framerate / 1000
+            if out is None:
+                out = AudioTrim(src, first_samp, last_samp)
+            else:
+                out = AudioConcat(out, AudioTrim(src, first_samp, last_samp))
+    else:
+        delay_samp = delay * params.framerate / 1000
+        if delay_samp > 0:
+            out = AudioConcat(Silence(wave_params(**{**params, 'nframes': delay_samp})), src)
+        else:
+            out = AudioTrim(src, -delay_samp)
+    outfile = wave.open(trimmedAudio, 'wb')
+    outfile.setparams(out.getparams())
+    outfile.writeframes(out.readframes(0, out.getparams().nframes))
+    outfile.close()
+    assertFileWithExit(trimmedAudio)

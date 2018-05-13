@@ -3,6 +3,7 @@
 import subprocess
 import xml.etree.ElementTree as ET
 import wave
+import collections
 
 from . import info
 from .kit import assertFileWithExit
@@ -77,7 +78,7 @@ class AudioTrim:
         self.wav = wav
         self.start = start
         self.end = end
-        self.params = wave_params(**{**params, 'nframes': self.end - self.start})
+        self.params = wave_params(**{**params._asdict(), 'nframes': self.end - self.start})
     def getparams(self):
         return self.params
     def readframes(self, start, n):
@@ -96,7 +97,7 @@ class AudioConcat:
             raise AudioProcessError('Audio parameters mismatch')
         self.nframes1 = params1.nframes
         self.nframes2 = params2.nframes
-        self.params = wave_params(**{**params1, 'nframes': params1.nframes + params2.nframes})
+        self.params = wave_params(**{**params1._asdict(), 'nframes': params1.nframes + params2.nframes})
     def getparams(self):
         return self.params
     def readframes(self, start, n):
@@ -139,7 +140,7 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) 
     else:
         delay_samp = delay * params.framerate / 1000
         if delay_samp > 0:
-            out = AudioConcat(Silence(wave_params(**{**params, 'nframes': delay_samp})), src)
+            out = AudioConcat(Silence(wave_params(**{**params._asdict(), 'nframes': delay_samp})), src)
         else:
             out = AudioTrim(src, -delay_samp)
     outfile = wave.open(trimmedAudio, 'wb')

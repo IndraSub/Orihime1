@@ -77,7 +77,7 @@ class AudioTrim:
         self.wav = wav
         self.start = start
         self.end = end
-        self.params = wave_params(**{**params, 'nframes': self.end - self.start}
+        self.params = wave_params(**{**params, 'nframes': self.end - self.start})
     def getparams(self):
         return self.params
     def readframes(self, start, n):

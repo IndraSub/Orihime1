@@ -39,7 +39,7 @@ def getSourceInfo(source: str) -> int:
 def extractAudio(source: str, extractedAudio: str) -> None:
     print('Extracting audio file, this may take a while on long videos...')
     invokePipeline([
-        [info.FFMPEG, '-hide_banner', '-i', source, '-vn', '-acodec', 'pcm_s16le', '-f', 'aiff', extractedAudio]
+        [info.FFMPEG, '-hide_banner', '-i', source, '-vn', '-acodec', 'pcm_s16be', '-f', 'aiff', extractedAudio]
     ])
     assertFileWithExit(extractedAudio)
 
@@ -154,7 +154,7 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) 
             out = AudioConcat(Silence(wave_params(**{**params._asdict(), 'nframes': delay_samp})), src)
         else:
             out = AudioTrim(src, -delay_samp)
-    outfile = wave.open(trimmedAudio, 'wb')
+    outfile = aifc.open(trimmedAudio, 'wb')
     outfile.setparams(out.getparams())
     outfile.writeframes(out.readframes(0, out.getparams().nframes))
     outfile.close()

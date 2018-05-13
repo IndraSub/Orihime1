@@ -160,8 +160,8 @@ def processVideo() -> None:
 
 def processAudio() -> None:
     source = os.path.join(working_directory, content['source']['filename'])
-    extractedAudio = os.path.join(temporary, 'audio-extracted.wav')
-    trimmedAudio = os.path.join(temporary, 'audio-trimmed.wav')
+    extractedAudio = os.path.join(temporary, 'audio-extracted.aif')
+    trimmedAudio = os.path.join(temporary, 'audio-trimmed.aif')
     encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
     trim_frames = None
     if any(f == 'TrimFrames' or (type(f) is dict and list(f.keys())[0] == 'TrimFrames')

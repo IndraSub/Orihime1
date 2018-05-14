@@ -244,11 +244,11 @@ def resolveDependency(filepath: str) -> None:
             lib = 'lib64' if fileinfo['bits'] == 64 else 'lib'
             pl = platform.machine()
             def replace_rpath(p: str):
-                p = re.sub(r'\$ORIGIN(?=[^a-zA-Z0-9\s])', origin, p)
+                p = re.sub(r'\$ORIGIN(?=[^a-zA-Z0-9\s]|$)', origin, p)
                 p = re.sub(r'\${ORIGIN}', origin, p)
-                p = re.sub(r'\$LIB(?=[^a-zA-Z0-9\s])', lib, p)
+                p = re.sub(r'\$LIB(?=[^a-zA-Z0-9\s]|$)', lib, p)
                 p = re.sub(r'\${LIB}', lib, p)
-                p = re.sub(r'\$PLATFORM(?=[^a-zA-Z0-9\s])', pl, p)
+                p = re.sub(r'\$PLATFORM(?=[^a-zA-Z0-9\s]|$)', pl, p)
                 p = re.sub(r'\${PLATFORM}', pl, p)
                 return p
             for rpath in fileinfo['rpath']:

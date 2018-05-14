@@ -462,7 +462,7 @@ def precheck() -> None:
             ('x264_7mod_64-10bit.exe', False, 'x264_7mod_10bit'),
             ('x265-misaka-8bit.exe', False, 'x265'),
             ('x265-misaka-10bit.exe', False, 'x265_10bit'),
-            ('qaac64.exe', True, 'qaac'),
+            ('qaac.exe', True),
         ]
     else:
         executables = [
@@ -475,7 +475,7 @@ def precheck() -> None:
             ('x264_7mod', False),
             ('x264_7mod-10bit', False),
             ('x265', False),
-            ('qaac64.exe', True, 'qaac'),
+            ('qaac', True),
         ]
     checkExecutables(executables)
 

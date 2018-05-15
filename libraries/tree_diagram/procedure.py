@@ -115,6 +115,15 @@ def precheckSubtitle() -> None:
         return
     writeEventName('Checking if all fonts are installed')
     subtitle = os.path.join(working_directory, content['source']['subtitle']['filename'])
+    with open(subtitle, 'rb') as f:
+        if f.read(2) != b'\xef\xbb':
+            message = 'No BOM found in subtitle file, continue?'
+            options = ['&Continue', 'E&xit']
+            answer = 1
+            if not info.autorun:
+                answer = choices(message, options, answer)
+            if answer == 1:
+                exit()
     fonts = checkAssFonts(subtitle)
     all_installed = True
     print('{:16}{:<32}{:<16}'.format('', 'FontFamily', 'IsInstalled'))

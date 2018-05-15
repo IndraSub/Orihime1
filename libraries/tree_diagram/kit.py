@@ -9,9 +9,9 @@ import logging
 logger = logging.getLogger('tree_diagram')
 
 def writeEventName(title: str) -> None:
-    print('-' * 126)
+    print('-' * 120)
     print(f'[{datetime.now().isoformat()}] {title}')
-    print('-' * 126)
+    print('-' * 120)
 
 def assertFileWithExit(filename: str) -> None:
     if not os.path.exists(filename) or os.path.getsize(filename) == 0:

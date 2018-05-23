@@ -43,6 +43,8 @@ class Delogo:
         core = vapoursynth.get_core()
         def decide(n):
             for start, end in frames:
+                if abs(n - start) < autodetect:
+                    return auto_dlg
                 if abs(n - end) < autodetect:
                     return auto_dlg
                 if n >= start and n <= end:

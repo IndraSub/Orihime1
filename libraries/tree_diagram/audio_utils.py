@@ -2,12 +2,12 @@
 
 import subprocess
 import xml.etree.ElementTree as ET
-import wave, aifc
 import collections
 
 from . import info
 from .kit import assertFileWithExit
 from .process_utils import invokePipeline
+from .audio_filters import *
 
 def getSourceInfo(source: str) -> int:
     xmlstr = subprocess.run([info.MEDIAINFO, '--Output=XML', source], stdout=subprocess.PIPE).stdout.decode('utf8')
@@ -51,89 +51,6 @@ def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
     ])
     assertFileWithExit(encodedAudio)
 
-class AudioProcessError(Exception):
-    pass
-
-wave_params = collections.namedtuple('wave_params',
-        ['nchannels', 'sampwidth', 'framerate', 'nframes', 'comptype', 'compname'])
-
-class AudioWavSource:
-    def __init__(self, wavfile):
-        self.wav = wave.open(wavfile, 'rb')
-    def getparams(self):
-        return self.wav.getparams()
-    def readframes(self, start, n):
-        self.wav.setpos(start)
-        return self.wav.readframes(n)
-    def __del__(self):
-        self.wav.close()
-
-class AudioAiffSource:
-    def __init__(self, wavfile):
-        self.wav = aifc.open(wavfile, 'rb')
-    def getparams(self):
-        return self.wav.getparams()
-    def readframes(self, start, n):
-        self.wav.setpos(start)
-        return self.wav.readframes(n)
-    def __del__(self):
-        self.wav.close()
-
-class AudioTrim:
-    def __init__(self, wav, start=0, end=None):
-        if end is None:
-            end = wav.getparams().nframes
-        params = wav.getparams()
-        if start < 0 or end < start or params.nframes < end:
-            raise AudioProcessError('Bad trim parameters')
-        self.wav = wav
-        self.start = start
-        self.end = end
-        self.params = wave_params(**{**params._asdict(), 'nframes': self.end - self.start})
-    def getparams(self):
-        return self.params
-    def readframes(self, start, n):
-        realstart = self.start + start
-        if realstart + n > self.end:
-            n = self.end - realstart
-        return self.wav.readframes(realstart, n)
-
-class AudioConcat:
-    def __init__(self, wav1, wav2):
-        self.wav1 = wav1
-        self.wav2 = wav2
-        params1 = wav1.getparams()
-        params2 = wav2.getparams()
-        if params1.nchannels != params2.nchannels or params1.sampwidth != params2.sampwidth or params1.framerate != params2.framerate:
-            raise AudioProcessError('Audio parameters mismatch')
-        self.nframes1 = params1.nframes
-        self.nframes2 = params2.nframes
-        self.params = wave_params(**{**params1._asdict(), 'nframes': params1.nframes + params2.nframes})
-    def getparams(self):
-        return self.params
-    def readframes(self, start, n):
-        seg = b''
-        if start < self.nframes1:
-            read1 = n
-            if self.nframes1 - start < n:
-                read1 = self.nframes1 - start
-            seg += self.wav1.readframes(start, read1)
-            start += read1
-            n -= read1
-        if n > 0:
-            seg += self.wav2.readframes(start - self.nframes1, n)
-        return seg
-
-class Silence:
-    def __init__(self, params):
-        self.params = params
-    def getparams(self):
-        return self.params
-    def readframes(self, start, n):
-        if start + n > self.params.nframes:
-            n = self.params.nframes - start
-        return b'\x00' * (self.params.nchannels * self.params.sampwidth * n)
-
 def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) -> None:
     fps, delay = getSourceInfo(source)
     print('Trimming audio file...')
@@ -154,11 +71,6 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) 
             out = AudioConcat(Silence(wave_params(**{**params._asdict(), 'nframes': delay_samp})), src)
         else:
             out = AudioTrim(src, -delay_samp)
-    outfile = aifc.open(trimmedAudio, 'wb')
-    outfile.setparams(out.getparams())
-    nframes = out.getparams().nframes
-    step = 1048576
-    for s in range(0, nframes, step):
-        outfile.writeframes(out.readframes(s, step))
-    outfile.close()
+    out = AudioOutput(out, trimmedAudio)
+    out.run()
     assertFileWithExit(trimmedAudio)

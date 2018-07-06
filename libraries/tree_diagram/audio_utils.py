@@ -3,6 +3,7 @@
 import subprocess
 import xml.etree.ElementTree as ET
 import collections
+import os
 
 from . import info
 from .kit import assertFileWithExit
@@ -71,6 +72,26 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) 
             out = AudioConcat(Silence(wave_params(**{**params._asdict(), 'nframes': delay_samp})), src)
         else:
             out = AudioTrim(src, -delay_samp)
+    out = AudioOutput(out, trimmedAudio)
+    out.run()
+    assertFileWithExit(trimmedAudio)
+
+def mergeAndTrimAudio(numAudio: int, trimmedAudio: str, frames=None) -> None:
+    src = AudioAiffSource(os.path.join(info.temporary, '0.aif'))
+    for i in range(1, numAudio):
+        src = AudioConcat(wav, AudioAiffSource(os.path.join(info.temporary, f'{i}.aif')))
+    params = src.getparams()
+    out = None
+    if frames:
+        for first, last in frames:
+            first_samp = round(first * params.framerate / fps - delay * params.framerate / 1000)
+            last_samp = round((last + 1) * params.framerate / fps - delay * params.framerate / 1000)
+            if out is None:
+                out = AudioTrim(src, first_samp, last_samp)
+            else:
+                out = AudioConcat(out, AudioTrim(src, first_samp, last_samp))
+    else:
+        out = src
     out = AudioOutput(out, trimmedAudio)
     out.run()
     assertFileWithExit(trimmedAudio)

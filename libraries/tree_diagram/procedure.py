@@ -12,7 +12,7 @@ from . import info
 from .kit import writeEventName, assertFileWithExit, choices, padUnicode
 from .process_utils import invokePipeline
 from .asscheck import checkAssFonts
-from .audio_utils import extractAudio, trimAudio, encodeAudio
+from .audio_utils import extractAudio, trimAudio, encodeAudio, mergeAndTrimAudio
 
 import yaml
 
@@ -172,13 +172,30 @@ def processAudio() -> None:
     extractedAudio = os.path.join(temporary, 'audio-extracted.aif')
     trimmedAudio = os.path.join(temporary, 'audio-trimmed.aif')
     encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
+
     trim_frames = None
     if any(f == 'TrimFrames' or (type(f) is dict and list(f.keys())[0] == 'TrimFrames')
-           for f in content['project']['flow']):
+           for f in content['project']['flow']): # has TrimFrames
         trim_frames = content['source']['trim_frames']
     writeEventName('Trim audio & Encode')
-    extractAudio(source, extractedAudio)
-    trimAudio(source, extractedAudio, trimmedAudio, trim_frames)
+
+    if any(f == 'MultiSource' or (type(f) is dict and list(f.keys())[0] == 'MultiSource')
+           for f in content['project']['flow']): # has MultiSource
+        idx = 0
+        for filename in content['source']['filenames']:
+            source = os.path.join(working_directory, filename)
+            print(f'Extracting {filename}...')
+            extractAudio(source, os.path.join(temporary, f'{idx}.aif'))
+            idx += 1
+        print(f'Trimming...')
+        mergeAndTrimAudio(idx, trimmedAudio, trim_frames)
+    else: # single source
+        print(f'Extracting...')
+        extractAudio(source, extractedAudio)
+        print(f'Trimming...')
+        trimAudio(source, extractedAudio, trimmedAudio, trim_frames)
+
+    print('Encoding...')
     encodeAudio(trimmedAudio, encodedAudio)
     assertFileWithExit(encodedAudio)
 

@@ -32,7 +32,7 @@ class AudioAiffSource:
         return self.wav.getparams()
     def readframes(self, start, n):
         self.wav.setpos(start)
-        width = self.getparams.sampwidth
+        width = self.getparams().sampwidth
         return endian_conv(self.wav.readframes(n), width)
     def __del__(self):
         self.wav.close()

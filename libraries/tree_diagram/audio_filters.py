@@ -113,4 +113,4 @@ class AudioOutput:
             if self.endian_conv:
                 data = endian_conv(data, width)
             self.output.writeframes(data)
-        outfile.close()
+        self.output.close()

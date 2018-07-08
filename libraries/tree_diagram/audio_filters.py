@@ -103,7 +103,9 @@ class AudioOutput:
             self.endian_conv = False
         else:
             raise AudioProcessError('Unknown output format: ' + format)
-        self.output.setparams(self.input.getparams())
+        self.output.setparams((*self.input.getparams()[0:4], 'NONE', 'not compressed'))
+    def getparams(self):
+        return self.output.getparams()
     def run(self):
         nframes = self.input.getparams().nframes
         step = 1048576

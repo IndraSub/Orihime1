@@ -72,7 +72,9 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) 
             out = AudioConcat(Silence(wave_params(**{**params._asdict(), 'nframes': delay_samp})), src)
         else:
             out = AudioTrim(src, -delay_samp)
-    out = AudioOutput(out, trimmedAudio)
+    out = AudioOutput(out, trimmedAudio, format='wav')
+    nchannels, sampwidth, framerate, nframes, comptype, compname = out.getparams()
+    print(f'Audio output: {nchannels} channel(s), {framerate} Hz, {nframes} frames, {nframes / framerate :.3f} s')
     out.run()
     assertFileWithExit(trimmedAudio)
 
@@ -92,6 +94,6 @@ def mergeAndTrimAudio(numAudio: int, trimmedAudio: str, frames=None) -> None:
                 out = AudioConcat(out, AudioTrim(src, first_samp, last_samp))
     else:
         out = src
-    out = AudioOutput(out, trimmedAudio)
+    out = AudioOutput(out, trimmedAudio, format='wav')
     out.run()
     assertFileWithExit(trimmedAudio)

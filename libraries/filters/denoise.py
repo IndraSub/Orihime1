@@ -130,7 +130,7 @@ def Waifu2xW2XC(core, clip, _, noise, block, model_photo, processor, gpu, list_g
 def VagueDenoiser(core, clip, _, strength, nsteps, csp):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
-    dei16 = mvf.Depth(clip, depth=16, fulls=True, fulld=True, dither="error_diffusion", useZ=True)
+    dei16 = mvf.Depth(clip, depth=16, fulls=True)
     den16 = core.vd.VagueDenoiser(
         dei16,
         threshold=strength,

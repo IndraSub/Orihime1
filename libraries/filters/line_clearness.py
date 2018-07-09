@@ -26,15 +26,13 @@ class LineClearness:
         topaa3 = topaa3.resize.Spline36(h, w)
         topaa3 = topaa3.std.Transpose()
 
-        dark1 = haf.FastLineDarkenMOD(topaa3, strength=12, thinning=0)
-        dark2 = haf.FastLineDarkenMOD(dark1, strength=24, thinning=0)
+        dark1 = haf.FastLineDarkenMOD(topaa3, strength=12, thinning=12)
+        dark2 = core.std.Convolution(dark1, matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
-        dark3 = core.std.Convolution(dark2, matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
+        diff_clip = core.std.MakeDiff(dark1, dark2)
+        diff_clip = diff_clip.rgvs.Repair(core.std.MakeDiff(clip, dark1), 13)
 
-        diff_clip = core.std.MakeDiff(dark2, dark3)
-        diff_clip = diff_clip.rgvs.Repair(core.std.MakeDiff(clip, dark2), 13)
-
-        csharp = core.std.MergeDiff(dark2, diff_clip)
+        csharp = core.std.MergeDiff(dark1, diff_clip)
         edge = core.std.ShufflePlanes(
             clips=[csharp, clip],
             planes=[0, 1, 2],

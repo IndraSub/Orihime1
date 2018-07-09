@@ -32,7 +32,7 @@ def getSourceInfo(source: str) -> int:
         vdelay = 0
     if adelay is None:
         print('AudioDelay: audio delay not found, assume it to 0.')
-        vdelay = 0
+        adelay = 0
     if fps is None:
         print('AudioDelay: fps not found, assume it to 24000/1001.')
         fps = 24000/1001

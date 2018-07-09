@@ -28,11 +28,14 @@ def getSourceInfo(source: str) -> int:
                 adelay = float(d.text)
     print(f'FrameRate: {fps} fps')
     if vdelay is None:
-        print('AudioDelay: video delay not found')
+        print('AudioDelay: video delay not found, assume it to 0.')
         vdelay = 0
     if adelay is None:
-        print('AudioDelay: audio delay not found')
-        return 0
+        print('AudioDelay: audio delay not found, assume it to 0.')
+        vdelay = 0
+    if fps is None:
+        print('AudioDelay: fps not found, assume it to 24000/1001.')
+        fps = 24000/1001
     delay = int((adelay - vdelay) * 1000)
     print(f'AudioDelay: {delay} ms')
     return fps, delay

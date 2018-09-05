@@ -3,4 +3,4 @@ episodes
 **/__pycache__
 cudnn_data/
 bin_cache.json
-
+libraries/vsedit.py

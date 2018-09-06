@@ -21,12 +21,12 @@ def make_tasks(configure):
         if type(step) is str:
             step = {step: {}}
         if len(step) != 1:
-            raise ConfigureError('Tasks: Less/More than one config in a single step, forget \'-\' ?')
+            raise ConfigureError('Process Flow: Less/More than one config in a single step, forget \'-\' ?')
         filter_name = list(step)[0]
         if not hasattr(filters, filter_name):
-            raise ConfigureError('Tasks: Filter \'{}\' not found'.format(filter_name))
+            raise ConfigureError('Process Flow: Filter \'{}\' not found'.format(filter_name))
         filter_conf = step[filter_name]
-        print(f'[Debug][Tasks] Add filter: {filter_name}', file=sys.stderr)
+        print(f'TreeDiagram [Process Flow] Add External filter: {filter_name}', file=sys.stderr)
         if type(filter_conf) is list:
             tasks.append(getattr(filters, filter_name)(configure, *filter_conf))
         elif type(filter_conf) is dict:
@@ -49,7 +49,7 @@ def main():
     clip = None
     for task in make_tasks(configure):
         clip = task(core, clip)
-    print('[DEBUG][Core] Output clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
+    print('TreeDiagram [Core] Output clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
     video = core.resize.Point(clip, matrix_in_s="709")
     video.set_output()
 

@@ -23,12 +23,12 @@ class Delogo:
         if not autodetect:
             self.autodetect = 0
         if not isinstance(self.autodetect, int):
-            raise Exception(f'[Delogo] Unacceptable autodetect range: {autodetect}')
+            raise ConfigureError(f'Delogo: Unacceptable autodetect range: {autodetect}')
 
     def __call__(self, core, clip):
         for frames in self.frames:
             start, end = frames
-            print('[DEBUG][Delogo] Frames to be processed: '+str(start)+'-'+str(end), file=sys.stderr)
+            print('TreeDiagram [Delogo] Frames to be processed: '+str(start)+'-'+str(end), file=sys.stderr)
         dlg = core.delogo.EraseLogo(
             clip,
             self.logo_file,

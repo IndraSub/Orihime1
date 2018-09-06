@@ -391,13 +391,14 @@ def findAVSPlugins() -> List[str]:
     return result
 
 def loadBinCache():
+    print('TreeDiagram [Runtime Check] Load binary fileinfo:')
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')
     cache = {}
     if os.path.exists(cachepath):
         with open(cachepath, 'r') as f:
             cache = json.loads(f.read())
     else:
-        print('*** Cache file not found, it may take a while to analyze binary files')
+        print('TreeDiagram [Runtime Check] Cache file not found, analyze binary files on site, it may take a while...')
     info.binaries = cache.get('binaries', {})
     info.vsfilters = cache.get('vsfilters', [])
     info.avsfilters = cache.get('avsfilters', [])
@@ -483,6 +484,6 @@ def precheck() -> None:
         info.vsfilters = findVSPlugins()
     if not info.avsfilters:
         info.avsfilters = findAVSPlugins()
-    print(f'VAPOURSYNTH PLUGINS #: {len(info.vsfilters)}')
-    print(f'AVISYNTH PLUGINS #: {len(info.avsfilters)}')
+    print(f'TreeDiagram [Runtime Check] External VapourSynth Plugins #: {len(info.vsfilters)}')
+    print(f'TreeDiagram [Runtime Check] External AviSynth Plugins #: {len(info.avsfilters)}')
     saveBinCache()

@@ -84,11 +84,11 @@ def setRootDirectory() -> None:
     script_directory = os.path.dirname(script_path)
     info.root_directory = os.path.abspath(os.path.join(script_directory, '..', '..'))
 
-def assertModulesInstalled(names: List[str]) -> None:
+def assertModulesInstalled(modules: List[Tuple[str, str]]) -> None:
     not_found = []
-    for name in names:
-        if importlib.util.find_spec(name) is None:
-            not_found.append(name)
+    for module in modules:
+        if importlib.util.find_spec(module[0]) is None:
+            not_found.append(module[1])
     if len(not_found) > 0:
         logger.critical(f'Modules not found: {", ".join(not_found)}')
         exit(-1)
@@ -391,14 +391,13 @@ def findAVSPlugins() -> List[str]:
     return result
 
 def loadBinCache():
-    print('TreeDiagram [Runtime Check] Load binary fileinfo:')
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')
     cache = {}
     if os.path.exists(cachepath):
         with open(cachepath, 'r') as f:
             cache = json.loads(f.read())
     else:
-        print('TreeDiagram [Runtime Check] Cache file not found, analyze binary files on site, it may take a while...')
+        print('*** Cache file not found, analyze binary files on site, it may take a while... ***')
     info.binaries = cache.get('binaries', {})
     info.vsfilters = cache.get('vsfilters', [])
     info.avsfilters = cache.get('avsfilters', [])
@@ -437,17 +436,17 @@ def precheck() -> None:
         windir = subprocess.check_output([info.WINEPATH, '-u', r'C:\windows']).decode().strip()
 
     required_modules = [
-        'yaml',              # PyYAML
-        'pefile',            # pefile
+        ('yaml', 'PyYAML'),
+        ('pefile', 'pefile'),
     ]
     if info.system == 'Windows':
         required_modules += [
-            'clr',           # pythonnet
+            ('clr', 'pythonnet'),
         ]
     else:
         required_modules += [
-            'fontconfig',    # Python-fontconfig
-            'elftools',      # pyelftools
+            ('fontconfig', 'Python-fontconfig'),
+            ('elftools', 'pyelftools'),
         ]
     assertModulesInstalled(required_modules)
 
@@ -459,10 +458,14 @@ def precheck() -> None:
             ('mediainfo.exe', True),
             ('mkvmerge.exe', True),
             ('mkvpropedit.exe', True),
+            ('x264_64-8bit.exe', False, 'x264_7mod'),
+            ('x264_64-10bit.exe', False, 'x264_7mod_10bit'),
             ('x264_7mod_64-8bit.exe', False, 'x264_7mod'),
             ('x264_7mod_64-10bit.exe', False, 'x264_7mod_10bit'),
-            ('x265-misaka-8bit.exe', False, 'x265'),
-            ('x265-misaka-10bit.exe', False, 'x265_10bit'),
+            ('x265-8bit.exe', False, 'x265'),
+            ('x265-10bit.exe', False, 'x265_10bit'),
+            ('x265-misaka-8bit.exe', False, 'x265_misaka'),
+            ('x265-misaka-10bit.exe', False, 'x265_misaka_10bit'),
             ('qaac.exe', True),
         ]
     else:
@@ -484,6 +487,6 @@ def precheck() -> None:
         info.vsfilters = findVSPlugins()
     if not info.avsfilters:
         info.avsfilters = findAVSPlugins()
-    print(f'TreeDiagram [Runtime Check] External VapourSynth Plugins #: {len(info.vsfilters)}')
-    print(f'TreeDiagram [Runtime Check] External AviSynth Plugins #: {len(info.avsfilters)}')
+    print(f'External VapourSynth Plugins #: {len(info.vsfilters)}')
+    print(f'External AviSynth Plugins #: {len(info.avsfilters)}')
     saveBinCache()

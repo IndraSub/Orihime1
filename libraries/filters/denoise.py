@@ -69,7 +69,7 @@ def BM3D(core, clip, _, strength, radius, profile):
 
 
 @SimpleFilter
-def Waifu2xCaffe(core, clip, _, noise, block, model, cudnn, processor, tta, multi_threads):
+def Waifu2xCaffe(core, clip, _, noise, block, model, cudnn, processor, tta, batch, multi_threads):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="full", filter_param_a=0, filter_param_b=0.5)
@@ -83,7 +83,8 @@ def Waifu2xCaffe(core, clip, _, noise, block, model, cudnn, processor, tta, mult
             model=model,
             cudnn=cudnn,
             processor=processor,
-            tta=tta, )
+            tta=tta,
+            batch=batch)
     if not multi_threads:
         exp = create_filter(rgbs, processor)
     else:

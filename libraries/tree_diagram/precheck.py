@@ -423,7 +423,7 @@ def precheck() -> None:
     loadBinCache()
 
     if info.system == 'Linux':
-        checkExecutables([('wine', True), ('winepath', True)])
+        checkExecutables([('wine', False), ('winepath', False)])
 
     addPath(os.path.join(info.root_directory, 'bin', info.system.lower()))
     addLibPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib'))

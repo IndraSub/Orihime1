@@ -31,6 +31,18 @@ def TIVTC(core, clip, _, field_order, matching_mode, process_speed,
 
 
 @SimpleFilter
+def Yadifmod(core, clip, _, edeint, order, field=-1, mode=0):
+    if edeint == "nnedi3":
+        deint_clip = core.nnedi3.nnedi3(clip, field=order)
+    elif edeint == "eedi3":
+        deint_clip = core.eedi3m.EEDI3(clip, field=order)
+    else:
+        raise ConfigureError('Yadifmod: edeint should be "nnedi3" or "eedi3"')
+    yadif = core.yadifmod.Yadifmod(clip, deint_clip, order, field, mode)
+    return core.vivtc.VDecimate(yadif)
+
+
+@SimpleFilter
 def QTGMC(core, clip, _, field_order, frame_rate_divisor):
     args = dict(
         Preset='Very Slow',

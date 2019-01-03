@@ -18,8 +18,7 @@ def getAssFontsList(filename: str) -> List[str]:
     return list(set(fontnames))
 
 def checkFontLinux(fontname: str) -> bool:
-    import re, fontconfig
-    fontname = re.escape(fontname)
+    import fontconfig
     return bool(fontconfig.query(f':family={fontname}'))
 
 def checkFontWindows(fontname: str) -> bool:

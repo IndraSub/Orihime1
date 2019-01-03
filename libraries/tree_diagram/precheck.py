@@ -468,10 +468,9 @@ def precheck() -> None:
             ('x264_64-10bit.exe', False, 'x264_7mod_10bit'),
             ('x264_7mod_64-8bit.exe', False, 'x264_7mod'),
             ('x264_7mod_64-10bit.exe', False, 'x264_7mod_10bit'),
-            ('x265-8bit.exe', False, 'x265'),
-            ('x265-10bit.exe', False, 'x265_10bit'),
-            ('x265-misaka-8bit.exe', False, 'x265_misaka'),
-            ('x265-misaka-10bit.exe', False, 'x265_misaka_10bit'),
+            ('x265.exe', False, 'x265'),
+            ('x265-yuuki-8bit.exe', False, 'x265_yuuki'),
+            ('x265-yuuki-10bit.exe', False, 'x265_yuuki_10bit'),
             ('qaac.exe', True),
         ]
     else:
@@ -485,6 +484,8 @@ def precheck() -> None:
             ('x264_7mod', False),
             ('x264_7mod-10bit', False),
             ('x265', False),
+            ('x265_yuuki', False),
+            ('x265_yuuki-10bit', False),
             ('qaac', True),
         ]
     checkExecutables(executables)

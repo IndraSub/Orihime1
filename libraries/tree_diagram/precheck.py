@@ -34,14 +34,11 @@ def addLibPath(path: str) -> None:
             os.environ['LD_LIBRARY_PATH'] = path
         else:
             os.environ['LD_LIBRARY_PATH'] = path + os.pathsep + os.environ['LD_LIBRARY_PATH']
-        if findExecutable(exe[0], shorthand) == None:
-            logger.info('*** WINE ENVIRONMENT INITIALIZAION SKIPPED ***')
+        winpath = subprocess.check_output([info.WINEPATH, '-w', path]).decode().strip()
+        if 'WINEPATH' not in os.environ:
+            os.environ['WINEPATH'] = path
         else:
-            winpath = subprocess.check_output([info.WINEPATH, '-w', path]).decode().strip()
-            if 'WINEPATH' not in os.environ:
-                os.environ['WINEPATH'] = path
-            else:
-                os.environ['WINEPATH'] = path + ';' + os.environ['WINEPATH']
+            os.environ['WINEPATH'] = path + ';' + os.environ['WINEPATH']
 
 def addPythonPath(path: str) -> None: # This one is appended after the current path
     if not os.path.exists(path):
@@ -234,11 +231,10 @@ def resolveDependency(filepath: str) -> None:
                 findpaths.append(os.path.join(windir, 'system32'))
             findpaths.append(windir)
             if info.system == 'Linux':
-                if findExecutable(exe[0], shorthand) != None:
-                    if not wine_paths:
-                        wine_paths = [*map(lambda p: subprocess.check_output([info.WINEPATH, '-u', p]).decode().strip(),
-                            subprocess.check_output([info.WINE, 'cmd', '/c', 'echo %PATH%']).decode().strip().split(';'))]
-                    findpaths += wine_paths
+                if not wine_paths:
+                    wine_paths = [*map(lambda p: subprocess.check_output([info.WINEPATH, '-u', p]).decode().strip(),
+                        subprocess.check_output([info.WINE, 'cmd', '/c', 'echo %PATH%']).decode().strip().split(';'))]
+                findpaths += wine_paths
                 ignore_case = True
             else:
                 findpaths += os.environ['PATH'].split(os.pathsep)
@@ -437,8 +433,7 @@ def precheck() -> None:
     if info.system == 'Windows':
         windir = os.environ['WINDIR']
     else:
-        if findExecutable(exe[0], shorthand) != None:
-            windir = subprocess.check_output([info.WINEPATH, '-u', r'C:\windows']).decode().strip()
+        windir = subprocess.check_output([info.WINEPATH, '-u', r'C:\windows']).decode().strip()
 
     required_modules = [
         ('yaml', 'PyYAML'),

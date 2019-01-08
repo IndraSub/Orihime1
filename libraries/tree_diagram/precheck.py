@@ -34,7 +34,7 @@ def addLibPath(path: str) -> None:
             os.environ['LD_LIBRARY_PATH'] = path
         else:
             os.environ['LD_LIBRARY_PATH'] = path + os.pathsep + os.environ['LD_LIBRARY_PATH']
-        if findExecutable('wine', shorthand) == None:
+        if findExecutable(exe[0], shorthand) == None:
             logger.info('*** WINE ENVIRONMENT INITIALIZAION SKIPPED ***')
         else:
             winpath = subprocess.check_output([info.WINEPATH, '-w', path]).decode().strip()
@@ -234,7 +234,7 @@ def resolveDependency(filepath: str) -> None:
                 findpaths.append(os.path.join(windir, 'system32'))
             findpaths.append(windir)
             if info.system == 'Linux':
-                if findExecutable('wine', shorthand) != None:
+                if findExecutable(exe[0], shorthand) != None:
                     if not wine_paths:
                         wine_paths = [*map(lambda p: subprocess.check_output([info.WINEPATH, '-u', p]).decode().strip(),
                             subprocess.check_output([info.WINE, 'cmd', '/c', 'echo %PATH%']).decode().strip().split(';'))]
@@ -437,7 +437,7 @@ def precheck() -> None:
     if info.system == 'Windows':
         windir = os.environ['WINDIR']
     else:
-        if findExecutable('wine', shorthand) != None:
+        if findExecutable(exe[0], shorthand) != None:
             windir = subprocess.check_output([info.WINEPATH, '-u', r'C:\windows']).decode().strip()
 
     required_modules = [

@@ -176,6 +176,7 @@ def processAudio() -> None:
     extractedAudio = os.path.join(temporary, 'audio-extracted.wav')
     trimmedAudio = os.path.join(temporary, 'audio-trimmed.wav')
     encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
+    clipInfo = os.path.join(temporary, 'clipinfo.json')
 
     trim_frames = None
     if any(f == 'TrimFrames' or (type(f) is dict and list(f.keys())[0] == 'TrimFrames')
@@ -197,7 +198,9 @@ def processAudio() -> None:
         print(f'Extracting...')
         extractAudio(source, extractedAudio)
         print(f'Trimming...')
-        trimAudio(source, extractedAudio, trimmedAudio, trim_frames)
+        clipInfoFile = open(clipInfo)
+        clipInfo = json.loads(clipInfoFile.read())
+        trimAudio(source, extractedAudio, trimmedAudio, clipInfo['fps'], trim_frames)
 
     print('Encoding...')
     encodeAudio(trimmedAudio, encodedAudio)

@@ -22,7 +22,6 @@ def getSourceInfo(source: str) -> int:
             d = track.find('{https://mediaarea.net/mediainfo}Delay')
             if d is not None:
                 vdelay = float(d.text)
-            fps = float(track.find('{https://mediaarea.net/mediainfo}FrameRate').text)
         elif track.attrib['type'] == 'Audio':
             d = track.find('{https://mediaarea.net/mediainfo}Delay')
             if d is not None:
@@ -33,24 +32,19 @@ def getSourceInfo(source: str) -> int:
             d = track.find('Delay')
             if d is not None:
                 vdelay = float(d.text)
-            fps = float(track.find('FrameRate').text)
         elif track.attrib['type'] == 'Audio':
             d = track.find('Delay')
             if d is not None:
                 adelay = float(d.text)
-    print(f'TreeDiagram [Audio Utils] FrameRate: {fps} fps')
     if vdelay is None:
         print('TreeDiagram [Audio Utils] AudioDelay: video delay not found, assume it to 0.')
         vdelay = 0
     if adelay is None:
         print('TreeDiagram [Audio Utils] AudioDelay: audio delay not found, assume it to 0.')
         adelay = 0
-    if fps is None:
-        print('TreeDiagram [Audio Utils] AudioDelay: fps not found, assume it to 24000/1001.')
-        fps = 24000/1001
     delay = int((adelay - vdelay) * 1000)
     print(f'TreeDiagram [Audio Utils] AudioDelay: {delay} ms')
-    return fps, delay
+    return delay
 
 def extractAudio(source: str, extractedAudio: str) -> None:
     print('TreeDiagram [Audio Utils] Extracting audio file, this may take a while on long videos...')
@@ -67,8 +61,11 @@ def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
     ])
     assertFileWithExit(encodedAudio)
 
-def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, frames=None) -> None:
-    fps, delay = getSourceInfo(source)
+def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, fps: list, frames=None) -> None:
+
+    fps = fps[0] / fps[1]
+    print(f'TreeDiagram [Audio Utils] VideoFrameRate: {fps} fps')
+    delay = getSourceInfo(source)
     print('TreeDiagram [Audio Utils] Trimming audio file...')
     src = AudioAiffSource(extractedAudio)
     params = src.getparams()

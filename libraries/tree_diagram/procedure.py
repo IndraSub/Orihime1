@@ -113,6 +113,8 @@ def precleanTemporaryFiles() -> None:
 def precheckSubtitle() -> None:
     if 'subtitle' not in content['source'] or not content['source']['subtitle']:
         return
+    if 'filename' not in content['source']['subtitle'] or not content['source']['subtitle']['filename']:
+        return
     writeEventName('Checking if all fonts are installed')
     subtitle = os.path.join(working_directory, content['source']['subtitle']['filename'])
     with open(subtitle, 'rb') as f:

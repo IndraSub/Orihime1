@@ -9,16 +9,12 @@ from .utils import ConfigureError, get_working_directory
 
 
 class Delogo:
-    def __init__(self, configure, logo_file, autodetect=False, l=0, r=0, t=0, b=0):
+    def __init__(self, configure, logo_file, offset=False, autodetect=False):
         frames = configure['source'].get('trim_frames', [])
         if len(frames) == 0:
             raise ConfigureError('Delogo: frames length is 0')
         self.logo_file = get_working_directory(logo_file)
-        self.frames = [*self.get_frames(frames)]
-        self.l = l
-        self.r = r
-        self.t = t
-        self.b = b
+        self.frames = [*self.get_frames(frames, offset)]
         self.autodetect = autodetect
         if not autodetect:
             self.autodetect = 0
@@ -52,7 +48,7 @@ class Delogo:
             return clip
         res = core.std.FrameEval(clip, decide)
 
-        return logonr.logoNR(core=core, dlg=res, src=clip, l=self.l, r=self.r, t=self.t, b=self.b, chroma=True)
+        return logonr.logoNR(core=core, dlg=res, src=clip, chroma=True)
 
     def auto_delogo(self, clip, dlg):
         core = vapoursynth.get_core()
@@ -97,14 +93,17 @@ class Delogo:
                 return dlg
         return core.std.FrameEval(clip, decide, prop_src=[clip_st, dlg_st])
 
-    def get_frames(self, frames):
+    def get_frames(self, frames, offset):
         frame = 0
         last_frame = 0
-        off = [264, 24, 24, 264]
-        for index in range(0, 4):
+        for index in range(len(frames)):
             start, end = frames[index]
             last_frame = frame
-            frame += int((end - start + 1) / 5 * 4)
-            if frame - off[index] <= last_frame:
-                continue
-            yield last_frame, frame - off[index]
+            frame += (end - start + 1)
+            if offset:
+                head, tail = offset[index]
+                if last_frame + head >= frame - tail:
+                    raise ConfigureError(f'Delogo: Unacceptable offset at clip {index}')
+                yield last_frame + head, frame - tail
+            else:
+                yield last_frame, frame

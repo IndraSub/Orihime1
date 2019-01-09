@@ -16,6 +16,7 @@ def getSourceInfo(source: str) -> int:
     vdelay = None
     adelay = None
     fps = None
+    # for MediaInfo Linux version
     for track in xml.iter('{https://mediaarea.net/mediainfo}track'):
         if track.attrib['type'] == 'Video':
             d = track.find('{https://mediaarea.net/mediainfo}Delay')
@@ -24,6 +25,17 @@ def getSourceInfo(source: str) -> int:
             fps = float(track.find('{https://mediaarea.net/mediainfo}FrameRate').text)
         elif track.attrib['type'] == 'Audio':
             d = track.find('{https://mediaarea.net/mediainfo}Delay')
+            if d is not None:
+                adelay = float(d.text)
+    # for MediaInfo Windows version
+    for track in xml.iter('track'):
+        if track.attrib['type'] == 'Video':
+            d = track.find('Delay')
+            if d is not None:
+                vdelay = float(d.text)
+            fps = float(track.find('FrameRate').text)
+        elif track.attrib['type'] == 'Audio':
+            d = track.find('Delay')
             if d is not None:
                 adelay = float(d.text)
     print(f'TreeDiagram [Audio Utils] FrameRate: {fps} fps')

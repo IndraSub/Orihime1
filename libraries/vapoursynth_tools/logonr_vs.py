@@ -178,26 +178,46 @@ def Overlay(clipa, clipb, x=0, y=0, mask=None):
     return last
 
 
-def logoNR(core, dlg, src, chroma=True, l=0, t=0, r=0, b=0, nr=None,
-           GPU=False):
+# The Overlay function is based on the one by HolyWu, thanks for his work!
+def mt_expand_multi(src, mode='rectangle', planes=None, sw=1, sh=1):
+    core = vs.get_core()
+    if not isinstance(src, vs.VideoNode):
+        raise TypeError('mt_expand_multi: This is not a clip')
+
+    if sw > 0 and sh > 0:
+        mode_m = [0, 1, 0, 1, 1, 0, 1, 0] if mode == 'losange' or (mode == 'ellipse' and (sw % 3) != 1) else [1, 1, 1, 1, 1, 1, 1, 1]
+    elif sw > 0:
+        mode_m = [0, 0, 0, 1, 1, 0, 0, 0]
+    elif sh > 0:
+        mode_m = [0, 1, 0, 0, 0, 0, 1, 0]
+    else:
+        mode_m = None
+
+    if mode_m is not None:
+        return mt_expand_multi(core.std.Maximum(src, planes=planes, coordinates=mode_m), mode=mode, planes=planes, sw=sw - 1, sh=sh - 1)
+    else:
+        return src
+
+
+def logoNR(core, dlg, src, chroma=True, l=0, t=0, r=0, b=0, nr=None, degrain="fft3d"):
     b_crop = not (l == 0 and t == 0 and r == 0 and b == 0)
-    src = core.std.CropRel(src, l, r, t, b) if b_crop else src
-    last = core.std.CropRel(dlg, l, r, t, b) if b_crop else dlg
+    src = core.std.Crop(src, l, r, t, b) if b_crop else src
+    last = core.std.Crop(dlg, l, r, t, b) if b_crop else dlg
     if nr is not None:
         clp_nr = eval(nr)
-    elif GPU:
-        throw_config_error("GPU", GPU)
-        # clp_nr = FFT3DGPU(last, sigma=4, plane=4 if chroma else 0) # Waiting for VapourSynth port of FFT3DGPU.
     else:
-        clp_nr = core.fft3dfilter.FFT3DFilter(
-            last, sigma=4, plane=4 if chroma else 0)
-    # VapourSynth's Expr function doesn't provide a parameter to control which plane to process, so we simply process them all.
-    logoM = core.std.Expr(clips=[last, src], expr="x y - abs 16 *")\
-                .std.Maximum(planes=[0,1,2] if chroma else [0], coordinates=[0, 1, 0, 1, 1, 0, 1, 0])\
-                .std.Convolution(matrix=[1, 1, 1, 1, 0, 1, 1, 1, 1], planes=[0,1,2] if chroma else [0])\
-                .std.Deflate(planes=[0,1,2] if chroma else [0])
+        if degrain == "knlmeanscl":
+            clp_nr = core.knlm.KNLMeansCL(last, d=1, a=4, s=8, h=3)
+        elif degrain == "fft3d":
+            clp_nr = core.fft3dfilter.FFT3DFilter(last, sigma=4, plane=4 if chroma else 0)
+            # VapourSynth's Expr function doesn't provide a parameter to control which plane to process, so we simply process them all.
+        else:
+            throw_config_error("degrain", degrain)
+    logoM = mt_expand_multi(core.std.Expr(clips=[last, src], expr="x y - abs 16 *"), mode='losange', sw=3, sh=3) \
+        .std.Convolution(matrix=[1, 1, 1, 1, 0, 1, 1, 1, 1], planes=[0, 1, 2] if chroma else [0]) \
+        .std.Deflate(planes=[0, 1, 2] if chroma else [0])
     if chroma:
-        core.std.MergeDiff(clp_nr, logoM)
+        clp_nr = core.std.MaskedMerge(last, clp_nr, logoM, planes=[0, 1, 2])
     else:
-        core.std.MergeDiff(clp_nr, logoM, planes=0)
+        clp_nr = core.std.MaskedMerge(last, clp_nr, logoM, planes=0)
     return Overlay(dlg, clp_nr, x=l, y=t) if b_crop else clp_nr

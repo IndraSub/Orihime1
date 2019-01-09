@@ -3,7 +3,7 @@ import sys
 
 import vapoursynth
 
-from vapoursynth_tools import havsfunc as haf
+from vapoursynth_tools import logonr_vs as logonr
 
 from .utils import ConfigureError, get_working_directory
 
@@ -48,7 +48,7 @@ class Delogo:
             return clip
         res = core.std.FrameEval(clip, decide)
 
-        return haf.logoNR(dlg=res, src=clip, chroma=True, d=1, a=4, s=8, h=3)
+        return logonr.logoNR(core=core, dlg=res, src=clip, chroma=True)
 
     def auto_delogo(self, clip, dlg):
         core = vapoursynth.get_core()

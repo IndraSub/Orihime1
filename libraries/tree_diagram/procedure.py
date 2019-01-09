@@ -70,7 +70,8 @@ def missionReport() -> None:
     ]
     report += [
         {"Subtitle": os.path.join(working_directory, content['source']['subtitle']['filename'])}
-    ] if 'subtitle' in content['source'] and content['source']['subtitle'] else []
+    ] if 'subtitle' in content['source'] and content['source']['subtitle']\
+         and 'filename' in content['source']['subtitle'] and content['source']['subtitle']['filename'] else []
     report += [
         {"Output": os.path.join(working_directory, content['output']['filename'])},
     ]

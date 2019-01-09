@@ -53,7 +53,8 @@ def loadCurrentWorking(idx: int) -> None:
     content['source']['filename'] = content['source']['filename'].format(**content)
     content['output']['filename'] = content['output']['filename'].format(**content)
     if 'subtitle' in content['source'] and content['source']['subtitle']:
-        content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
+        if 'filename' in content['source']['subtitle'] and content['source']['subtitle']['filename']:
+            content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
 
     info.current_working = current_working
     info.content = content

@@ -9,13 +9,15 @@ from .utils import ConfigureError, get_working_directory
 
 
 class Delogo:
-    def __init__(self, configure, logo_file, offset=False, autodetect=False):
+    def __init__(self, configure, logo_file, offset=False, autodetect=False, degrain="fft3d", chroma=False):
         frames = configure['source'].get('trim_frames', [])
         if len(frames) == 0:
             raise ConfigureError('Delogo: frames length is 0')
         self.logo_file = get_working_directory(logo_file)
         self.frames = [*self.get_frames(frames, offset)]
         self.autodetect = autodetect
+        self.degrain = degrain
+        self.chroma = chroma
         if not autodetect:
             self.autodetect = 0
         if not isinstance(self.autodetect, int):
@@ -48,7 +50,7 @@ class Delogo:
             return clip
         res = core.std.FrameEval(clip, decide)
 
-        return logonr.logoNR(core=core, dlg=res, src=clip, chroma=True)
+        return logonr.logoNR(core=core, dlg=res, src=clip, chroma=self.chroma, degrain=self.degrain)
 
     def auto_delogo(self, clip, dlg):
         core = vapoursynth.get_core()

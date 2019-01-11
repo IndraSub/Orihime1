@@ -37,24 +37,24 @@ def getSourceInfo(source: str) -> int:
             if d is not None:
                 adelay = float(d.text)
     if vdelay is None:
-        print('TreeDiagram [Audio Utils] AudioDelay: video delay not found, assume it to 0.')
+        print('TreeDiagram [Audio Utils] No video delay in stream meta, assume it to 0.')
         vdelay = 0
     if adelay is None:
-        print('TreeDiagram [Audio Utils] AudioDelay: audio delay not found, assume it to 0.')
+        print('TreeDiagram [Audio Utils] No audio delay in stream meta, assume it to 0.')
         adelay = 0
     delay = int((adelay - vdelay) * 1000)
-    print(f'TreeDiagram [Audio Utils] AudioDelay: {delay} ms')
+    print(f'TreeDiagram [Audio Utils] Audio delay related to video: {delay} ms')
     return delay
 
 def extractAudio(source: str, extractedAudio: str) -> None:
-    print('TreeDiagram [Audio Utils] Extracting audio file, this may take a while on long videos...')
+    print('TreeDiagram [Audio Utils] Extracting audio data, this may take a while on long videos...')
     invokePipeline([
         [info.FFMPEG, '-hide_banner', '-i', source, '-vn', '-acodec', 'pcm_s16be', '-f', 'aiff', extractedAudio]
     ])
     assertFileWithExit(extractedAudio)
 
 def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
-    print('TreeDiagram [Audio Utils] Recoding audio data to AAC format with QAAC')
+    print('TreeDiagram [Audio Utils] Encoding audio data to AAC format with QAAC')
     invokePipeline([
         [info.FFMPEG, '-hide_banner', '-i', trimmedAudio, '-f', 'wav', '-vn', '-'],
         [info.QAAC, '--tvbr', '127', '--quality', '2', '--ignorelength', '-o', encodedAudio, '-'],
@@ -64,9 +64,9 @@ def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
 def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, fps: list, frames=None) -> None:
 
     fps = fps[0] / fps[1]
-    print(f'TreeDiagram [Audio Utils] VideoFrameRate: {fps} fps')
+    print(f'TreeDiagram [Audio Utils] Video stream framerate: {fps} fps')
     delay = getSourceInfo(source)
-    print('TreeDiagram [Audio Utils] Trimming audio file...')
+    print('TreeDiagram [Audio Utils] Trimming wave file...')
     src = AudioAiffSource(extractedAudio)
     params = src.getparams()
     out = None

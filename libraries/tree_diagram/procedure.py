@@ -79,7 +79,7 @@ def missionReport() -> None:
     yaml.dump(report, sys.stdout, default_flow_style=False)
 
 def precheckOutput() -> None:
-    writeEventName('Checking output file')
+    writeEventName('Check output file')
     output = os.path.join(working_directory, content['output']['filename'])
     output_exists = os.path.exists(output)
     if not output_exists:
@@ -94,7 +94,7 @@ def precheckOutput() -> None:
             exit()
 
 def precleanTemporaryFiles() -> None:
-    writeEventName('Checking temporary files')
+    writeEventName('Check temporary files')
     if not os.path.exists(temporary):
         os.makedirs(temporary)
     directoryFiles = os.listdir(temporary)
@@ -117,11 +117,11 @@ def precheckSubtitle() -> None:
         return
     if 'filename' not in content['source']['subtitle'] or not content['source']['subtitle']['filename']:
         return
-    writeEventName('Checking if all fonts are installed')
+    writeEventName('Check SSA fonts')
     subtitle = os.path.join(working_directory, content['source']['subtitle']['filename'])
     with open(subtitle, 'rb') as f:
         if f.read(2) != b'\xef\xbb':
-            message = 'No BOM found in subtitle file, continue?'
+            message = 'The SSA file has no BOM, continue?'
             options = ['&Continue', 'E&xit']
             answer = 1
             if not info.autorun:
@@ -135,7 +135,7 @@ def precheckSubtitle() -> None:
     for f in fonts:
         print('{:16}{}{:<16}'.format('', padUnicode(f['FontFamily'], 32), f['IsInstalled']))
         all_installed = all_installed and f['IsInstalled']
-    message = 'Please make sure that all fonts are installed'
+    message = 'Please make sure that all fonts are installed:'
     options = ['&Confirm', 'E&xit']
     answer = 0 if all_installed else 1
     if not all_installed and not info.autorun:
@@ -145,7 +145,7 @@ def precheckSubtitle() -> None:
 
 def processVideo() -> None:
     output = os.path.join(temporary, 'video-encoded.mp4')
-    writeEventName('Process video with VapourSynth & Encode')
+    writeEventName('Process video & Encode')
     tdinfo = dict(info)
     tdinfo['binaries'] = None # avoid envvar growing too large
     os.environ['TDINFO'] = json.dumps(tdinfo)
@@ -182,27 +182,23 @@ def processAudio() -> None:
     if any(f == 'TrimFrames' or (type(f) is dict and list(f.keys())[0] == 'TrimFrames')
            for f in content['project']['flow']): # has TrimFrames
         trim_frames = content['source']['trim_frames']
-    writeEventName('Trim audio & Encode')
+    writeEventName('Process audio & Encode')
 
     if any(f == 'MultiSource' or (type(f) is dict and list(f.keys())[0] == 'MultiSource')
            for f in content['project']['flow']): # has MultiSource
         idx = 0
         for filename in content['source']['filenames']:
             source = os.path.join(working_directory, filename)
-            print(f'Extracting {filename}...')
+            print(f'TreeDiagram [Multi Source] Preparing {filename}...')
             extractAudio(source, os.path.join(temporary, f'{idx}.aif'))
             idx += 1
-        print(f'Trimming...')
         mergeAndTrimAudio(idx, trimmedAudio, trim_frames)
     else: # single source
-        print(f'Extracting...')
         extractAudio(source, extractedAudio)
-        print(f'Trimming...')
         clipInfoFile = open(clipInfo)
         clipInfo = json.loads(clipInfoFile.read())
         trimAudio(source, extractedAudio, trimmedAudio, clipInfo['fps'], trim_frames)
 
-    print('Encoding...')
     encodeAudio(trimmedAudio, encodedAudio)
     assertFileWithExit(encodedAudio)
 
@@ -210,14 +206,14 @@ def mkvMerge() -> None:
     output = os.path.join(working_directory, content['output']['filename'])
     encodedVideo = os.path.join(temporary, 'video-encoded.mp4')
     encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
-    writeEventName('Merge audio & video data with MKVMerge')
+    writeEventName('Mux audio & video into MKV')
     invokePipeline([[info.MKVMERGE, '-o', output, encodedVideo, encodedAudio]])
     assertFileWithExit(output)
 
 def mkvMetainfo() -> None:
     title = content['title']
     output = os.path.join(working_directory, content['output']['filename'])
-    writeEventName('Edit video metainfo with MKVPropEdit')
+    writeEventName('Write MKV metainfo')
     props = [
         output,
         '--edit', 'info', '--set', f'title={title}',

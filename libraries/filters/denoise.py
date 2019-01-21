@@ -12,7 +12,7 @@ def SMDegrain(core, clip, _):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     dei16 = mvf.Depth(clip, depth=16, fulls=True)
-    den16 = haf.SMDegrain(
+    return haf.SMDegrain(
         dei16,
         tr=4,
         thSAD=300,
@@ -26,8 +26,6 @@ def SMDegrain(core, clip, _):
         truemotion=False,
         hpad=16,
         vpad=16, )
-    rep16 = core.rgvs.Repair(den16, dei16, mode=1)
-    return rep16
 
 
 @SimpleFilter
@@ -35,7 +33,7 @@ def SMDegrainFast(core, clip, _):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     dei16 = mvf.Depth(clip, depth=16, fulls=True)
-    den16 = haf.SMDegrain(
+    return haf.SMDegrain(
         dei16,
         tr=2,
         blksize=32,
@@ -47,8 +45,6 @@ def SMDegrainFast(core, clip, _):
         truemotion=True,
         hpad=0,
         vpad=0, )
-    rep16 = core.rgvs.Repair(den16, dei16, mode=1)
-    return rep16
 
 
 @SimpleFilter
@@ -62,10 +58,7 @@ def BM3D(core, clip, _, strength, radius, profile):
         radius1=radius,
         profile1=profile,
         refine=1, )
-    dei16 = core.resize.Bicubic(clip, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
-    den16 = core.resize.Bicubic(den, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
-    rep16 = core.rgvs.Repair(den16, dei16, mode=1)
-    return rep16
+    return core.resize.Bicubic(den, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
 
 
 @SimpleFilter
@@ -132,14 +125,12 @@ def VagueDenoiser(core, clip, _, strength, nsteps, csp):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
     dei16 = mvf.Depth(clip, depth=16, fulls=True)
-    den16 = core.vd.VagueDenoiser(
+    return core.vd.VagueDenoiser(
         dei16,
         threshold=strength,
         method=2,
         nsteps=nsteps,
         percent=csp, )
-    rep16 = core.rgvs.Repair(den16, dei16, mode=1)
-    return rep16
 
 
 @SimpleFilter

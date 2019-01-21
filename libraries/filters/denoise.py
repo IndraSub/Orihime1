@@ -132,22 +132,3 @@ def VagueDenoiser(core, clip, _, strength, nsteps, csp):
         nsteps=nsteps,
         percent=csp, )
 
-
-@SimpleFilter
-def MisakaDenoise(core, clip, _, v_strength, v_nsteps, v_csp, b_strength, b_radius, b_profile):
-    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
-    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
-    dei16 = mvf.Depth(clip, depth=16, fulls=True)
-    den1 = core.vd.VagueDenoiser(dei16, threshold=v_strength, method=2, nsteps=v_nsteps, percent=v_csp)
-    rgbs = core.resize.Bicubic(den1, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="full", filter_param_a=0, filter_param_b=0.5)
-    den2 = mvf.BM3D(
-        rgbs,
-        sigma=b_strength,
-        radius1=b_radius,
-        profile1=b_profile,
-        refine=1, )
-    dei16 = core.resize.Bicubic(clip, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
-    den16 = core.resize.Bicubic(den2, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
-    rep16 = core.rgvs.Repair(den16, dei16, mode=1)
-    return rep16
-

@@ -3,7 +3,7 @@ from .crop_before import CropBefore
 from .deband import f3kdb
 from .deinterlace import IT, VIVTC, TIVTC, Yadifmod, QTGMC
 from .delogo import Delogo
-from .denoise import SMDegrain, SMDegrainFast, BM3D, Waifu2xCaffe, Waifu2xW2XC, VagueDenoiser, MisakaDenoise
+from .denoise import SMDegrain, SMDegrainFast, BM3D, Waifu2xCaffe, Waifu2xW2XC, NLMeans, VagueDenoiser
 from .dering import Dering
 from .edge_refine import EdgeRefine
 from .framerate import FrameRate

@@ -121,6 +121,23 @@ def Waifu2xW2XC(core, clip, _, noise, block, model_photo, processor, gpu, list_g
 
 
 @SimpleFilter
+def NLMeans(core, clip, _, strength=1.2, tr=1, sr=2, nr=4, channel="auto", device_type="auto", device_id=0, info=False):
+    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
+    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
+    dei16 = mvf.Depth(clip, depth=16, fulls=True)
+    return core.knlm.KNLMeansCL(
+        dei16,
+        d=tr,
+        a=sr,
+        s=nr,
+        h=strength,
+        channels=channel,
+        device_type=device_type,
+        device_id=device_id,
+        info=info, )
+
+
+@SimpleFilter
 def VagueDenoiser(core, clip, _, strength, nsteps, csp):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)

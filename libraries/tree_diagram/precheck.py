@@ -104,8 +104,6 @@ def findExecutable(filename: str, shorthand=None) -> str:
         if os.path.exists(file_test) and os.path.isfile(file_test) and os.access(file_test, os.X_OK):
             filepath = file_test
             break
-    if filepath:
-        filepath = os.path.realpath(filepath)
 
     if shorthand is None:
         shorthand = os.path.basename(filename).upper()
@@ -127,6 +125,7 @@ def findExecutable(filename: str, shorthand=None) -> str:
     return filepath
 
 def loadBinaryInfo(filename: str):
+    filename = os.path.realpath(filename)
     fileinfo = {}
     with open(filename, 'rb') as f:
         head = f.read(4)
@@ -279,6 +278,7 @@ def resolveDependency(filepath: str) -> None:
 
 def queryDependency(filepath: str, debug=False, circular=set()) -> List[str]:
     global windir
+    filepath = os.path.realpath(filepath)
     if info.system == 'Windows':
         if filepath.lower().startswith(windir.lower() + '\\'):
             return []

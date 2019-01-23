@@ -1,14 +1,21 @@
 import os
 import sys
-
+import inspect
+import .store as store
 
 class ConfigureError(Exception):
     pass
 
 def SimpleFilter(filter_function):
-    def initializer(source, *args, **kwargs):
+    def initializer(configure, *args, **kwargs):
         def caller(core, clip):
-            return filter_function(core, clip, source, *args, **kwargs)
+            kw = dict(kwargs)
+            argnames = inspect.getfullargspec(filter_function).args
+            for argname in set(argnames[3+len(args):]) - kw.keys():
+                stored = store.get_stored_clip(argname)
+                if stored is not None:
+                    kw[argname] = stored
+            return filter_function(core, clip, configure, *args, **kw)
         return caller
     return initializer
 

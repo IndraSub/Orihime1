@@ -15,5 +15,5 @@ def LoadClip(core, clip, configure, name):
 
 def get_stored_clip(name):
     if name not in _saved_clips:
-        raise ConfigureError(f"Clip '{name}' not found.")
+        return None
     return _saved_clips[name]

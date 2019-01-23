@@ -12,7 +12,7 @@ def SimpleFilter(filter_function):
             kw = dict(kwargs)
             argnames = inspect.getfullargspec(filter_function).args
             for argname in set(argnames[3+len(args):]) - kw.keys():
-                stored = store.get_stored_clip(argname)
+                stored = store.load_clip(argname)
                 if stored is not None:
                     kw[argname] = stored
             return filter_function(core, clip, configure, *args, **kw)

@@ -1,7 +1,5 @@
 import time
-import vapoursynth as vs
 
-from vapoursynth_tools import havsfunc as haf
 from vapoursynth_tools import mvsfunc as mvf
 
 from .utils import SimpleFilter, ConfigureError, get_working_directory, merge_clips

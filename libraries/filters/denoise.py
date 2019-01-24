@@ -1,4 +1,3 @@
-import os
 import vapoursynth as vs
 
 from vapoursynth_tools import havsfunc as haf

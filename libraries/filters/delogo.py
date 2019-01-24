@@ -3,19 +3,24 @@ import sys
 
 import vapoursynth
 
+from vapoursynth_tools import mvsfunc as mvf
 from vapoursynth_tools import logonr_vs as logonr
 
 from .utils import ConfigureError, get_working_directory
 
 
 class Delogo:
-    def __init__(self, configure, logo_file, offset=False, autodetect=False, degrain="fft3d", chroma=False):
+    def __init__(self, configure, logo_file, offset=False, autodetect=False, l=0, r=0, t=0, b=0, degrain="fft3d", chroma=False):
         frames = configure['source'].get('trim_frames', [])
         if len(frames) == 0:
             raise ConfigureError('Delogo: frames length is 0')
         self.logo_file = get_working_directory(logo_file)
         self.frames = [*self.get_frames(frames, offset)]
         self.autodetect = autodetect
+        self.l = l
+        self.r = r
+        self.t = t
+        self.b = b
         self.degrain = degrain
         self.chroma = chroma
         if not autodetect:
@@ -27,6 +32,7 @@ class Delogo:
         for frames in self.frames:
             start, end = frames
             print('TreeDiagram [Delogo] Frames to be processed: '+str(start)+'-'+str(end), file=sys.stderr)
+        clip = mvf.Depth(clip, depth=8, fulls=True, dither=3)
         dlg = core.delogo.EraseLogo(
             clip,
             self.logo_file,
@@ -50,7 +56,8 @@ class Delogo:
             return clip
         res = core.std.FrameEval(clip, decide)
 
-        return logonr.logoNR(core=core, dlg=res, src=clip, chroma=self.chroma, degrain=self.degrain)
+        nr = logonr.logoNR(core=core, dlg=res, src=clip, chroma=self.chroma, degrain=self.degrain)
+        return mvf.Depth(nr, depth=16, fulls=True, dither=3)
 
     def auto_delogo(self, clip, dlg):
         core = vapoursynth.get_core()

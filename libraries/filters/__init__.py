@@ -11,6 +11,7 @@ from .line_clearness import LineClearness
 from .line_sharp import LineSharp
 from .format import Format
 from .mcfi import SVP
+from .post_process import CSMOD
 from .resolution import Resolution
 from .source import LWLibavSource, LSMASHVideoSource, FFMS2, AVISource, MultiSource
 from .subtitle import VSFilterMod, Subtext, InfoText

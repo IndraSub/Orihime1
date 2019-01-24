@@ -1,7 +1,6 @@
 import os
 import sys
 import inspect
-import .store as store
 
 class ConfigureError(Exception):
     pass
@@ -9,10 +8,11 @@ class ConfigureError(Exception):
 def SimpleFilter(filter_function):
     def initializer(configure, *args, **kwargs):
         def caller(core, clip):
+            from .store import load_clip
             kw = dict(kwargs)
             argnames = inspect.getfullargspec(filter_function).args
             for argname in set(argnames[3+len(args):]) - kw.keys():
-                stored = store.load_clip(argname)
+                stored = load_clip(argname)
                 if stored is not None:
                     kw[argname] = stored
             return filter_function(core, clip, configure, *args, **kw)

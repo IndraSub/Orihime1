@@ -2,19 +2,20 @@ import os
 import sys
 import inspect
 
+_saved_clips = {}
+
 class ConfigureError(Exception):
     pass
 
 def SimpleFilter(filter_function):
     def initializer(configure, *args, **kwargs):
         def caller(core, clip):
-            from .store import load_clip
             kw = dict(kwargs)
-            argnames = inspect.getfullargspec(filter_function).args
-            for argname in set(argnames[3+len(args):]) - kw.keys():
-                stored = load_clip(argname)
-                if stored is not None:
-                    kw[argname] = stored
+            if '_clip' in kw:
+                for i in kw['_clip']:
+                    stored = load_clip(kw['_clip'][i])
+                    if stored is not None:
+                        kw['_clip'][i] = stored
             return filter_function(core, clip, configure, *args, **kw)
         return caller
     return initializer
@@ -26,9 +27,13 @@ def get_working_directory(*paths, is_exists=True):
         raise FileNotFoundError('%s not found' % path)
     return os.path.realpath(path)
 
-
 def merge_clips(clips):
     clip = clips[0]
     for item in clips[1:]:
         clip += item
     return clip
+
+def load_clip(name):
+    if name not in _saved_clips:
+        return None
+    return _saved_clips[name]

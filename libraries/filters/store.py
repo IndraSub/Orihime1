@@ -1,6 +1,4 @@
-from .utils import ConfigureError, SimpleFilter
-
-_saved_clips = {}
+from .utils import ConfigureError, SimpleFilter, _saved_clips
 
 @SimpleFilter
 def StoreClip(core, clip, configure, name):
@@ -13,7 +11,3 @@ def LoadClip(core, clip, configure, name):
         raise ConfigureError(f"Clip '{name}' not found.")
     return _saved_clips[name]
 
-def load_clip(name):
-    if name not in _saved_clips:
-        return None
-    return _saved_clips[name]

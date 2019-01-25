@@ -3,6 +3,7 @@
 from typing import List
 from . import info
 import re
+import subprocess
 
 def getAssFontsList(filename: str) -> List[str]:
     with open(filename, 'r', encoding='utf8') as f:
@@ -18,8 +19,9 @@ def getAssFontsList(filename: str) -> List[str]:
     return list(set(fontnames))
 
 def checkFontLinux(fontname: str) -> bool:
-    import fontconfig
-    return bool(fontconfig.query(f':family={fontname}'))
+    matched = subprocess.check_output([
+        info.FC_MATCH, '-f', '%{family}\n', f':family={fontname}'], encoding='utf-8')
+    return matched.strip('\n') == fontname
 
 def checkFontWindows(fontname: str) -> bool:
     import clr

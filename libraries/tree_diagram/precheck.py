@@ -62,15 +62,21 @@ def checkSystem() -> None:
     logger.info(f'RELEASE: {release}')
     logger.info(f'MACHINE: {plat_info.machine}')
 
+    default_encoding = sys.getdefaultencoding()
+    logger.info(f'ENCODING: {default_encoding}')
+
     passed = True
-    if sys.version_info < (3, 6):
-        logger.error('Python version should be no less than 3.6')
+    if sys.version_info != (3, 6):
+        logger.error('Python version should be 3.6')
         passed = False
     if plat_info.system not in ['Windows', 'Linux']:
         logger.error('Unsupported operating system')
         passed = False
     if plat_info.machine not in ['i386', 'x86_64', 'AMD64']:
         logger.error('Unsupported processor')
+        passed = False
+    if default_encoding != 'utf-8':
+        logger.error('Encoding other than utf-8 is not supported')
         passed = False
     if not passed:
         exit(-1)
@@ -446,7 +452,6 @@ def precheck() -> None:
         ]
     else:
         required_modules += [
-            ('fontconfig', 'Python-fontconfig'),
             ('elftools', 'pyelftools'),
         ]
     assertModulesInstalled(required_modules)
@@ -482,6 +487,7 @@ def precheck() -> None:
             ('x265_yuuki', False),
             ('x265_yuuki-10bit', False),
             ('qaac', True),
+            ('fc-match', True), # fontconfig
         ]
     checkExecutables(executables)
 

@@ -19,9 +19,18 @@ def getAssFontsList(filename: str) -> List[str]:
     return list(set(fontnames))
 
 def checkFontLinux(fontname: str) -> bool:
-    matched = subprocess.check_output([
-        info.FC_MATCH, '-f', '%{family}\n', f':family={fontname}'], encoding='utf-8')
-    return matched.strip('\n') == fontname
+    i = 0
+    while True:
+        matched = subprocess.check_output([
+            info.FC_MATCH,
+            '-f', '%{family[' + str(i) + ']}\n',
+            f':family={fontname}'], encoding='utf-8').strip('\n')
+        if matched == fontname:
+            return True
+        if matched == '':
+            break
+        i += 1
+    return False
 
 def checkFontWindows(fontname: str) -> bool:
     import clr

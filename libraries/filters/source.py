@@ -34,7 +34,7 @@ def LSMASHVideoSource(core, source):
 
 @SourceFilter
 def FFMS2(core, source):
-    return core.ffms2.Source(source)
+    return core.ffms2.Source(source, seekmode=0)
 
 @SourceFilter
 def AVISource(core, source):

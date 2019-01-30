@@ -403,7 +403,7 @@ def loadBinCache():
         with open(cachepath, 'r') as f:
             cache = json.loads(f.read())
     else:
-        print('*** Cache file not found, analyze binary files on site, it may take a while... ***')
+        print('*** Cache file not found. Analyzing binary files on site. It may take a while... ***')
     info.binaries = cache.get('binaries', {})
     info.vsfilters = cache.get('vsfilters', [])
     info.avsfilters = cache.get('avsfilters', [])

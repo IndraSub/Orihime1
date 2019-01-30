@@ -131,7 +131,8 @@ def findExecutable(filename: str, shorthand=None) -> str:
     return filepath
 
 def loadBinaryInfo(filename: str):
-    filename = os.path.realpath(filename)
+    if filename != os.path.realpath(filename):
+        raise Exception('must use real path (no symlinks)')
     fileinfo = {}
     with open(filename, 'rb') as f:
         head = f.read(4)
@@ -216,6 +217,7 @@ wine_paths = None
 windir = None
 def resolveDependency(filepath: str) -> None:
     global wine_paths, windir
+    filepath = os.path.realpath(filepath)
     if filepath not in info.binaries:
         loadBinaryInfo(filepath)
     fileinfo = info.binaries[filepath]
@@ -349,6 +351,7 @@ def findVSPlugins() -> List[str]:
         for name in files:
             path = os.path.join(root, name)
             if path.lower().endswith('.dll') or (info.system == 'Linux' and path.endswith('.so')):
+                path = os.path.realpath(path)
                 loadBinaryInfo(path)
                 fileinfo = info.binaries[path]
                 if 'exports' not in fileinfo:
@@ -378,6 +381,7 @@ def findAVSPlugins() -> List[str]:
         for name in files:
             path = os.path.join(root, name)
             if path.lower().endswith('.dll') or (info.system == 'Linux' and path.endswith('.so')):
+                path = os.path.realpath(path)
                 loadBinaryInfo(path)
                 fileinfo = info.binaries[path]
                 if 'exports' not in fileinfo:

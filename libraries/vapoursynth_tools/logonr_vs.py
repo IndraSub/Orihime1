@@ -209,7 +209,7 @@ def logoNR(core, dlg, src, chroma=True, l=0, t=0, r=0, b=0, nr=None, degrain="ff
         if degrain == "knlmeanscl":
             clp_nr = core.knlm.KNLMeansCL(last, d=1, a=4, s=8, h=3)
         elif degrain == "fft3d":
-            clp_nr = core.fft3dfilter.FFT3DFilter(last, sigma=4, plane=4 if chroma else 0)
+            clp_nr = core.fft3dfilter.FFT3DFilter(last, sigma=4, planes=4 if chroma else 0)
             # VapourSynth's Expr function doesn't provide a parameter to control which plane to process, so we simply process them all.
         else:
             throw_config_error("degrain", degrain)

@@ -1,5 +1,4 @@
 import sys
-import vapoursynth as vs
 
 from vapoursynth_tools import mvsfunc as mvf
 
@@ -18,9 +17,8 @@ def SourceFilter(filter_func):
         file = get_working_directory(configure['source']['filename'])
         clip = filter_func(core, file)
         print('TreeDiagram [Source] Input clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
-        clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444P16, fulls=range)
-        clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=range, bits=16)
-        clip = mvf.Depth(clip, depth=16, fulls=range, fulld=True, dither=3)
+        clip = core.fmtc.resample(clip, css="420")
+        clip = mvf.Depth(clip, depth=8, fulls=range, fulld=True, dither=3)
         return clip
     return source
 

@@ -10,50 +10,51 @@ format_limits = ['HP_YUV420P8L',
                  'HP_YUV420P10F',
                  'HP_YUV420P12L',
                  'HP_YUV420P12F',
-                 
+                 'HP_YUV444P16F',
+
                  'GRAY8',
                  'GRAY16',
                  'GRAYH',
                  'GRAYS',
-                 
+
                  'YUV420P8',
                  'YUV422P8',
                  'YUV444P8',
                  'YUV410P8',
                  'YUV411P8',
                  'YUV440P8',
-                 
+
                  'YUV420P9',
                  'YUV422P9',
                  'YUV444P9',
-                 
+
                  'YUV420P10',
                  'YUV422P10',
                  'YUV444P10',
-                 
+
                  'YUV420P12',
                  'YUV422P12',
                  'YUV444P12',
-                 
+
                  'YUV420P14',
                  'YUV422P14',
                  'YUV444P14',
-                 
+
                  'YUV420P16',
                  'YUV422P16',
                  'YUV444P16',
-                 
+
                  'YUV444PH',
                  'YUV444PS',
-                 
+
                  'RGB24',
                  'RGB27',
                  'RGB30',
                  'RGB48',
-                 
+
                  'RGBH',
                  'RGBS',
-                 
+
                  'COMPATBGR32',
                  'COMPATYUY2']
 
@@ -86,6 +87,10 @@ class Format:
         elif self.format == 'HP_YUV420P12F':
             clip = mvf.ToYUV(clip, css="420", full=True)
             clip = mvf.Depth(clip, depth=12, fulls=True, fulld=True, dither=3)
+        elif self.format == 'HP_YUV444P16F':
+            clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444P16, fulls=True)
+            clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=16)
+            clip = mvf.Depth(clip, depth=16, fulls=True, fulld=True, dither=3)
         else:
             clip = core.resize.Bicubic(clip, format=getattr(vs, self.format))
         return clip

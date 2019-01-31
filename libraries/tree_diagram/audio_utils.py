@@ -62,7 +62,6 @@ def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
     assertFileWithExit(encodedAudio)
 
 def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, fps: list, frames=None) -> None:
-
     fps = fps[0] / fps[1]
     print(f'TreeDiagram [Audio Utils] Video stream framerate: {fps} fps')
     delay = getSourceInfo(source)
@@ -90,13 +89,15 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, fps: list, fr
     out.run()
     assertFileWithExit(trimmedAudio)
 
-def mergeAndTrimAudio(numAudio: int, trimmedAudio: str, frames=None) -> None:
+def mergeAndTrimAudio(numAudio: int, trimmedAudio: str, fps: list =None, frames=None) -> None:
     src = AudioAiffSource(os.path.join(info.temporary, '0.aif'))
     for i in range(1, numAudio):
         src = AudioConcat(wav, AudioAiffSource(os.path.join(info.temporary, f'{i}.aif')))
     params = src.getparams()
     out = None
     if frames:
+        fps = fps[0] / fps[1]
+        delay = 0 # Note: any way to decide?
         for first, last in frames:
             first_samp = round(first * params.framerate / fps - delay * params.framerate / 1000)
             last_samp = round((last + 1) * params.framerate / fps - delay * params.framerate / 1000)

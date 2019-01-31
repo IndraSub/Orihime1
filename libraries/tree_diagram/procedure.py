@@ -77,6 +77,13 @@ def missionReport() -> None:
     ]
 
     yaml.dump(report, sys.stdout, default_flow_style=False)
+    message = 'Confirm?'
+    options = ['&Confirm', 'E&xit']
+    answer = 0
+    if not info.autorun:
+        answer = choices(message, options, answer)
+    if answer == 1:
+        exit()
 
 def precheckOutput() -> None:
     writeEventName('Check output file')

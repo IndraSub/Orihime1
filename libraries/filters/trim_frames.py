@@ -1,5 +1,4 @@
 from .utils import ConfigureError, merge_clips, get_working_directory
-import pydub
 import os
 import sys
 import subprocess

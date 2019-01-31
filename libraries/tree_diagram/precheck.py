@@ -448,7 +448,6 @@ def precheck() -> None:
     required_modules = [
         ('yaml', 'PyYAML'),
         ('pefile', 'pefile'),
-        ('pydub', 'pydub'),
     ]
     if info.system == 'Windows':
         required_modules += [

@@ -42,6 +42,8 @@ def checkFontWindows(fontname: str) -> bool:
     return True
 
 def checkFont(fontname: str) -> bool:
+    if fontname.startswith('@'):
+        fontname = fontname[1:]
     if info.system == 'Windows':
         return checkFontWindows(fontname)
     else:

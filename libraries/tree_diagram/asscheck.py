@@ -23,8 +23,8 @@ def checkFontLinux(fontname: str) -> bool:
     while True:
         matched = subprocess.check_output([
             info.FC_MATCH,
-            '-f', '%{family[' + str(i) + ']}',
-            f':family={fontname}'], encoding='utf-8')
+            '-f', f'%{{family[{i}]}}', f':family={fontname}'
+        ], encoding='utf-8')
         if matched == fontname:
             return True
         if matched == '':

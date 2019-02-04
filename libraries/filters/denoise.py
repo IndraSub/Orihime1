@@ -8,9 +8,9 @@ from .utils import ConfigureError, SimpleFilter
 
 @SimpleFilter
 def SMDegrain(core, clip, _):
-    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
-    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
-    dei16 = mvf.Depth(clip, depth=16, fulls=True)
+    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=False)
+    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=False, bits=32)
+    dei16 = mvf.Depth(clip, depth=16, fulls=False)
     return haf.SMDegrain(
         dei16,
         tr=4,
@@ -29,9 +29,9 @@ def SMDegrain(core, clip, _):
 
 @SimpleFilter
 def SMDegrainFast(core, clip, _):
-    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
-    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
-    dei16 = mvf.Depth(clip, depth=16, fulls=True)
+    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=False)
+    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=False, bits=32)
+    dei16 = mvf.Depth(clip, depth=16, fulls=False)
     return haf.SMDegrain(
         dei16,
         tr=2,
@@ -48,23 +48,23 @@ def SMDegrainFast(core, clip, _):
 
 @SimpleFilter
 def BM3D(core, clip, _, strength, radius, profile):
-    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
-    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
-    rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="full", filter_param_a=0, filter_param_b=0.5)
+    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=False)
+    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=False, bits=32)
+    rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="limited", filter_param_a=0, filter_param_b=0.5)
     den = mvf.BM3D(
         rgbs,
         sigma=strength,
         radius1=radius,
         profile1=profile,
         refine=1, )
-    return core.resize.Bicubic(den, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
+    return core.resize.Bicubic(den, format=vs.YUV444P16, matrix_s="709", range_in_s="limited", range_s="limited", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
 
 
 @SimpleFilter
 def Waifu2xCaffe(core, clip, _, noise, block, model, cudnn, processor, tta, batch, multi_threads):
-    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
-    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
-    rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="full", filter_param_a=0, filter_param_b=0.5)
+    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=False)
+    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=False, bits=32)
+    rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="limited", filter_param_a=0, filter_param_b=0.5)
     def create_filter(clip, processor):
         return core.caffe.Waifu2x(
             clip,
@@ -88,19 +88,19 @@ def Waifu2xCaffe(core, clip, _, noise, block, model, cudnn, processor, tta, batc
             for i in range(0, threads_per_device)
             for p in range(0, devices)
         ]) if threads > 1 else create_filter(rgbs, processor)
-    yuv = mvf.ToYUV(exp, css="444", full=True)
-    yuv = mvf.Depth(yuv, depth=16, fulls=True, fulld=True, dither=3)
-    dei16 = core.resize.Bicubic(clip, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
-    den16 = core.resize.Bicubic(yuv, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
+    yuv = mvf.ToYUV(exp, css="444", full=False)
+    yuv = mvf.Depth(yuv, depth=16, fulls=False, fulld=False, dither=3)
+    dei16 = core.resize.Bicubic(clip, format=vs.YUV444P16, matrix_s="709", range_in_s="limited", range_s="limited", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
+    den16 = core.resize.Bicubic(yuv, format=vs.YUV444P16, matrix_s="709", range_in_s="limited", range_s="limited", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
     rep16 = core.rgvs.Repair(den16, dei16, mode=1)
     return rep16
 
 
 @SimpleFilter
 def Waifu2xW2XC(core, clip, _, noise, block, model_photo, processor, gpu, list_gpu):
-    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
-    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
-    rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="full", filter_param_a=0, filter_param_b=0.5)
+    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=False)
+    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=False, bits=32)
+    rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="limited", filter_param_a=0, filter_param_b=0.5)
     exp = core.w2xc.Waifu2x(
         rgbs,
         noise=noise,
@@ -110,20 +110,20 @@ def Waifu2xW2XC(core, clip, _, noise, block, model_photo, processor, gpu, list_g
         processor=processor,
         gpu=gpu,
         list_proc=list_gpu, )
-    yuv = mvf.ToYUV(exp, css="444", full=True)
-    yuv = mvf.Depth(yuv, depth=16, fulls=True, fulld=True, dither=3)
-    den16 = core.resize.Bicubic(yuv, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
+    yuv = mvf.ToYUV(exp, css="444", full=False)
+    yuv = mvf.Depth(yuv, depth=16, fulls=False, fulld=False, dither=3)
+    den16 = core.resize.Bicubic(yuv, format=vs.YUV444P16, matrix_s="709", range_in_s="limited", range_s="limited", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
     if not list_gpu:
-        dei16 = core.resize.Bicubic(clip, format=vs.YUV444P16, matrix_s="709", range_in_s="full", range_s="full", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
+        dei16 = core.resize.Bicubic(clip, format=vs.YUV444P16, matrix_s="709", range_in_s="limited", range_s="limited", filter_param_a=0, filter_param_b=0.5, dither_type="error_diffusion")
         return core.rgvs.Repair(den16, dei16, mode=1)
     return den16
 
 
 @SimpleFilter
 def NLMeans(core, clip, _, strength=1.2, tr=1, sr=2, nr=4, channel="auto", device_type="auto", device_id=0, info=False):
-    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
-    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
-    dei16 = mvf.Depth(clip, depth=16, fulls=True)
+    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=False)
+    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=False, bits=32)
+    dei16 = mvf.Depth(clip, depth=16, fulls=False)
     return core.knlm.KNLMeansCL(
         dei16,
         d=tr,
@@ -138,9 +138,9 @@ def NLMeans(core, clip, _, strength=1.2, tr=1, sr=2, nr=4, channel="auto", devic
 
 @SimpleFilter
 def VagueDenoiser(core, clip, _, strength, nsteps, csp):
-    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=True)
-    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=True, bits=32)
-    dei16 = mvf.Depth(clip, depth=16, fulls=True)
+    clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS, fulls=False)
+    clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=False, bits=32)
+    dei16 = mvf.Depth(clip, depth=16, fulls=False)
     return core.vd.VagueDenoiser(
         dei16,
         threshold=strength,

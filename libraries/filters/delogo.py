@@ -32,7 +32,6 @@ class Delogo:
         for frames in self.frames:
             start, end = frames
             print('TreeDiagram [Delogo] Frames to be processed: '+str(start)+'-'+str(end), file=sys.stderr)
-        clip = mvf.Depth(clip, depth=8, fulls=True, dither=3)
         dlg = core.delogo.EraseLogo(
             clip,
             self.logo_file,
@@ -57,7 +56,7 @@ class Delogo:
         res = core.std.FrameEval(clip, decide)
 
         nr = logonr.logoNR(core=core, dlg=res, src=clip, chroma=self.chroma, degrain=self.degrain)
-        return mvf.Depth(nr, depth=16, fulls=True, dither=3)
+        return mvf.Depth(nr, depth=16, fulls=False, dither=3)
 
     def auto_delogo(self, clip, dlg):
         core = vapoursynth.get_core()

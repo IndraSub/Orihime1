@@ -18,7 +18,7 @@ def SourceFilter(filter_func):
         clip = filter_func(core, file)
         print('TreeDiagram [Source] Input clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
         clip = core.fmtc.resample(clip, css="420")
-        clip = mvf.Depth(clip, depth=8, fulls=range, fulld=True, dither=3)
+        clip = mvf.Depth(clip, depth=8, fulls=range, fulld=False, dither=3)
         return clip
     return source
 
@@ -55,5 +55,5 @@ def MultiSource(core, clip, configure, source_filter, range):
     clip = merge_clips(clips)
     print('TreeDiagram [Source] Input clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
     clip = core.fmtc.resample(clip, css="420")
-    clip = mvf.Depth(clip, depth=8, fulls=range, fulld=True, dither=3)
+    clip = mvf.Depth(clip, depth=8, fulls=range, fulld=False, dither=3)
     return clip

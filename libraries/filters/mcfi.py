@@ -8,8 +8,6 @@ from .utils import ConfigureError, SimpleFilter
 
 @SimpleFilter
 def SVP(core, clip, _, super_params, analyse_params, smoothfps_params):
-    clip = core.fmtc.resample(clip, css="420", csp=vs.YUV420P16)
-    clip = mvf.Depth(clip, depth=8, fulls=True)
     svp_super = core.svp1.Super(
         clip,
         json.dumps(super_params), )

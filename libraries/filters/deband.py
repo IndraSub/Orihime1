@@ -5,7 +5,6 @@ from .utils import ConfigureError, SimpleFilter
 
 @SimpleFilter
 def f3kdb(core, clip, _):
-    clip = mvf.Depth(clip, depth=16, fulls=True, dither=3)
     pre16 = core.std.Convolution(clip, matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
     pre16 = pre16.std.Convolution(matrix=[1, 1, 1, 1, 1, 1, 1, 1, 1])
     noi16 = core.std.MakeDiff(clip, pre16)

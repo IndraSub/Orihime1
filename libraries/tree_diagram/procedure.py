@@ -25,7 +25,10 @@ info.working_directory = working_directory
 info.temporary = temporary
 info.autorun = False
 
+missions = None
+
 def load_missions():
+    global missions
     missions_path = os.path.join(working_directory, 'missions.yaml')
     if not os.path.exists(missions_path):
         logger.critical(f'{missions_path} not found')

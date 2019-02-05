@@ -4,3 +4,4 @@ episodes
 cudnn_data/
 bin_cache.json
 libraries/vsedit.py
+worker_config.yaml

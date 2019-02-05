@@ -28,10 +28,12 @@ if not os.path.exists(missions_path):
 
 with open(missions_path, encoding='utf8') as f:
     missions = yaml.load(f)
+    if missions is None:
+        missions = {}
 
 info.working_directory = working_directory
 info.temporary = temporary
-info.autorun = missions.get('autorun')
+info.autorun = missions.get('autorun', False)
 
 def loadCurrentWorking(idx: int) -> None:
     global current_working

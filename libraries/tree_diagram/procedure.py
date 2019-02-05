@@ -264,11 +264,9 @@ def main() -> None:
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)
         missionReport()
-        telegramReportBegin()
         processVideo()
         processAudio()
         mkvMerge()
         mkvMetainfo()
         cleanTemporaryFiles(force=True)
         missionComplete()
-        telegramReportEnd()

@@ -2,4 +2,7 @@
 
 from .. import tree_diagram
 
-tree_diagram.main()
+try:
+    tree_diagram.main()
+except tree_diagram.ExitException as e:
+    exit(e.code)

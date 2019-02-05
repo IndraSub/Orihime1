@@ -9,7 +9,7 @@ import logging
 import json
 
 from . import info
-from .kit import writeEventName, assertFileWithExit, choices, padUnicode
+from .kit import writeEventName, assertFileWithExit, choices, padUnicode, ExitException
 from .process_utils import invokePipeline
 from .asscheck import checkAssFonts
 from .audio_utils import extractAudio, trimAudio, encodeAudio, mergeAndTrimAudio
@@ -21,19 +21,22 @@ logger = logging.getLogger('tree_diagram')
 working_directory = os.path.join(info.root_directory, 'episodes')
 temporary = os.path.join(working_directory, 'temporary')
 
-missions_path = os.path.join(working_directory, 'missions.yaml')
-if not os.path.exists(missions_path):
-    logger.critical(f'{missions_path} not found')
-    exit(-1)
-
-with open(missions_path, encoding='utf8') as f:
-    missions = yaml.load(f)
-    if missions is None:
-        missions = {}
-
 info.working_directory = working_directory
 info.temporary = temporary
-info.autorun = missions.get('autorun', False)
+info.autorun = False
+
+def load_missions():
+    missions_path = os.path.join(working_directory, 'missions.yaml')
+    if not os.path.exists(missions_path):
+        logger.critical(f'{missions_path} not found')
+        raise ExitException(-1)
+
+    with open(missions_path, encoding='utf8') as f:
+        missions = yaml.load(f)
+        if missions is None:
+            missions = {}
+
+    info.autorun = missions.get('autorun', False)
 
 def loadCurrentWorking(idx: int) -> None:
     global current_working
@@ -41,7 +44,7 @@ def loadCurrentWorking(idx: int) -> None:
     current_working = os.path.join(working_directory, missions['missions'][idx])
     if not os.path.exists(current_working):
         logger.critical(f'{current_working} not found')
-        exit(-1)
+        raise ExitException(-1)
 
     with open(current_working, encoding='utf8') as f:
         content = yaml.load(f)
@@ -85,7 +88,7 @@ def missionReport() -> None:
     if not info.autorun:
         answer = choices(message, options, answer)
     if answer == 1:
-        exit()
+        raise ExitException()
 
 def precheckOutput() -> None:
     writeEventName('Check output file')
@@ -100,7 +103,7 @@ def precheckOutput() -> None:
         if not info.autorun:
             answer = choices(message, options, answer)
         if answer == 1:
-            exit()
+            raise ExitException()
 
 def precleanTemporaryFiles() -> None:
     writeEventName('Check temporary files')
@@ -119,7 +122,7 @@ def precleanTemporaryFiles() -> None:
             shutil.rmtree(temporary)
             os.makedirs(temporary)
         else:
-            exit()
+            raise ExitException()
 
 def precheckSubtitle() -> None:
     if 'subtitle' not in content['source'] or not content['source']['subtitle']:
@@ -136,7 +139,7 @@ def precheckSubtitle() -> None:
             if not info.autorun:
                 answer = choices(message, options, answer)
             if answer == 1:
-                exit()
+                raise ExitException()
     fonts = checkAssFonts(subtitle)
     all_installed = True
     print('{:16}{:<32}{:<16}'.format('', 'FontFamily', 'IsInstalled'))
@@ -150,7 +153,7 @@ def precheckSubtitle() -> None:
     if not all_installed and not info.autorun:
         answer = choices(message, options, answer)
     if answer == 1:
-        exit()
+        raise ExitException()
 
 def processVideo() -> None:
     output = os.path.join(temporary, 'video-encoded.mp4')
@@ -173,7 +176,7 @@ def processVideo() -> None:
         encoder_params = ['--y4m'] + encoder_params + ['--output', output, '-']
     else:
         print(f"Encoder {encoder} is not supported.")
-        exit(-1)
+        raise ExitException(-1)
     invokePipeline([
         [info.VSPIPE] + vapoursynth_pipeline,
         [encoder_binary] + encoder_params
@@ -292,6 +295,7 @@ def telegramReportEnd():
     threading.Thread(target=wrappedUrlopen, args=('https://api.telegram.org/bot' + token + '/sendMessage', postdata)).start()
 
 def main() -> None:
+    load_missions()
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)
         precheckOutput()

@@ -8,6 +8,11 @@ import logging
 
 logger = logging.getLogger('tree_diagram')
 
+class ExitException(Exception):
+    def __init__(self, code):
+        super().__init__(f'Exit on code: {code}')
+        self.code = code
+
 def writeEventName(title: str) -> None:
     print('-' * 120)
     print(f'[{datetime.now().isoformat()}] {title}')
@@ -16,7 +21,7 @@ def writeEventName(title: str) -> None:
 def assertFileWithExit(filename: str) -> None:
     if not os.path.exists(filename) or os.path.getsize(filename) == 0:
         logger.critical(f'Failed operation detected, press anykey to exit')
-        exit(-1)
+        raise ExitException(-1)
 
 def choices(message: str, options: List[str], default_choice: int) -> int:
     '''

@@ -2,20 +2,19 @@
 
 import subprocess
 import xml.etree.ElementTree as ET
-import collections
 import os
 
 from . import info
 from .kit import assertFileWithExit
 from .process_utils import invokePipeline
-from .audio_filters import *
+from .audio_filters import AudioWavSource, AudioAiffSource, AudioConcat, AudioTrim, AudioOutput, Silence, \
+    wave_params
 
 def getSourceInfo(source: str) -> int:
     xmlstr = subprocess.run([info.MEDIAINFO, '--Output=XML', source], stdout=subprocess.PIPE).stdout.decode('utf8')
     xml = ET.fromstring(xmlstr)
     vdelay = None
     adelay = None
-    fps = None
     # for MediaInfo Linux version
     for track in xml.iter('{https://mediaarea.net/mediainfo}track'):
         if track.attrib['type'] == 'Video':
@@ -92,7 +91,7 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, fps: list, fr
 def mergeAndTrimAudio(numAudio: int, trimmedAudio: str, fps: list =None, frames=None) -> None:
     src = AudioAiffSource(os.path.join(info.temporary, '0.aif'))
     for i in range(1, numAudio):
-        src = AudioConcat(wav, AudioAiffSource(os.path.join(info.temporary, f'{i}.aif')))
+        src = AudioConcat(src, AudioAiffSource(os.path.join(info.temporary, f'{i}.aif')))
     params = src.getparams()
     out = None
     if frames:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from .. import tree_diagram
+from .. import tree_diagram # pylint: disable=relative-beyond-top-level
 
 try:
     tree_diagram.main()

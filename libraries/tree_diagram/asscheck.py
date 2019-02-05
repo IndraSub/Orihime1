@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from typing import List
-from . import info
 import re
 import subprocess
+from typing import List
+from . import info
 
 def getAssFontsList(filename: str) -> List[str]:
     with open(filename, 'r', encoding='utf8') as f:
@@ -33,7 +33,7 @@ def checkFontLinux(fontname: str) -> bool:
     return False
 
 def checkFontWindows(fontname: str) -> bool:
-    import clr
+    import clr # pylint: disable=unused-import
     from System import Drawing
     try:
         Drawing.FontFamily(fontname)

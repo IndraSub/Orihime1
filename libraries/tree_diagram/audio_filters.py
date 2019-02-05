@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-import collections, wave, aifc
+import collections
+import wave
+import aifc
 
 class AudioProcessError(Exception):
     pass

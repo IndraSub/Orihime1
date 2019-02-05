@@ -251,49 +251,6 @@ def missionComplete():
     writeEventName('Mission Complete')
     invokePipeline([[info.MEDIAINFO, output]])
 
-if 'telegram_bot_proxy' in missions:
-    import socks
-    import socket
-    host, port = missions['telegram_bot_proxy'].split(':')
-    port = int(port)
-    # NOTE: monkey patching
-    socks.set_default_proxy(socks.SOCKS5, host, port)
-    socket.socket = socks.socksocket
-
-def wrappedUrlopen(*args, **kwargs):
-    try:
-        urllib.request.urlopen(*args, **kwargs)
-    except:
-        logger.warn(f'WARN: Failed to contact Telegram API')
-
-def telegramReportBegin():
-    if 'telegram_bot_token' not in missions:
-        return
-    token = missions['telegram_bot_token']
-    chat = missions['telegram_bot_chat']
-    message = f'[{info.node}] Mission start: {content["title"]}'
-    import urllib.parse, urllib.request, threading
-    postdata = urllib.parse.urlencode({
-        'chat_id': chat,
-        'text': message,
-    }).encode('utf8')
-    # NOTE: ignoring errors
-    threading.Thread(target=wrappedUrlopen, args=('https://api.telegram.org/bot' + token + '/sendMessage', postdata)).start()
-
-def telegramReportEnd():
-    if 'telegram_bot_token' not in missions:
-        return
-    token = missions['telegram_bot_token']
-    chat = missions['telegram_bot_chat']
-    import urllib.parse, urllib.request, threading
-    message = f'[{info.node}] Mission complete: {content["title"]}'
-    postdata = urllib.parse.urlencode({
-        'chat_id': chat,
-        'text': message,
-    }).encode('utf8')
-    # NOTE: ignoring errors
-    threading.Thread(target=wrappedUrlopen, args=('https://api.telegram.org/bot' + token + '/sendMessage', postdata)).start()
-
 def main() -> None:
     load_missions()
     for idx in range(len(missions['missions'])):

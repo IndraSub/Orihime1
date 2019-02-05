@@ -13,6 +13,7 @@ import subprocess
 import json
 
 logger = logging.getLogger('tree_diagram')
+prechecked = False
 
 class Info(dict):
     def __init__(self, *args, **kwargs):
@@ -422,7 +423,11 @@ def saveBinCache():
         }))
 
 def precheck() -> None:
-    global windir
+    global windir, prechecked
+
+    if prechecked:
+        return
+
     if 'TDDEBUG' in os.environ and os.environ['TDDEBUG'] == '1':
         logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     else:
@@ -501,3 +506,4 @@ def precheck() -> None:
     print(f'External VapourSynth Plugins #: {len(info.vsfilters)}')
     print(f'External AviSynth Plugins #: {len(info.avsfilters)}')
     saveBinCache()
+    prechecked = True

@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger('tree_diagram')
 
 class ExitException(Exception):
-    def __init__(self, code):
+    def __init__(self, code=0):
         super().__init__(f'Exit on code: {code}')
         self.code = code
 

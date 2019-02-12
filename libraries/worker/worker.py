@@ -32,8 +32,8 @@ class Worker:
         if self.config is None:
             config = {}
         self.config = {**self.config, **config}
-        self.ep = self.config['endpoint'].rstrip('/')
-        self.token = self.config['token']
+        self.ep = self.config['Endpoint'].rstrip('/')
+        self.token = self.config['Token']
 
     def register(self):
         client_info = {k: info[k] for k in ['node', 'system', 'system_version', 'root_directory']}

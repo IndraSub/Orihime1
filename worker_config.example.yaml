@@ -1,0 +1,4 @@
+Endpoint: http://localhost/api
+Token: some-token
+#PollingInterval: 15
+#Heartbeat: 15

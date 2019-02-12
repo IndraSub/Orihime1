@@ -45,24 +45,16 @@ class Worker:
             raise Exception('Failed to register the worker')
         self.client_id = r.json()['client_id']
 
-    def task_prepare(self):
-        assert requests.post(self.ep + f'/task/{self.task_id}/prepare', data={
+    def task_status(self, status):
+        assert requests.post(self.ep + f'/task/{self.task_id}', data={
             'client_id': self.client_id,
-        }).code == 200
-    def task_run(self):
-        assert requests.post(self.ep + f'/task/{self.task_id}/run', data={
-            'client_id': self.client_id,
-        }).code == 200
-    def task_finish(self):
-        assert requests.post(self.ep + f'/task/{self.task_id}/finish', data={
-            'client_id': self.client_id,
+            'status': status
         }).code == 200
     def task_fail(self):
-        if self.task_id is None: # not running
-            return
-        requests.post(self.ep + f'/task/{self.task_id}/fail', data={
-            'client_id': self.client_id,
-        })
+        try:
+            self.task_status('fail')
+        except Exception:
+            pass
 
     def run(self):
         while True:
@@ -80,7 +72,7 @@ class Worker:
                     continue
                 self.task_id = task['task_id']
 
-                self.task_prepare()
+                self.task_status('prepare')
                 logger.info('Downloading files')
                 for d in task['downloads']:
                     self.download(d['url'], d['path'], d['sha256sum'])
@@ -90,16 +82,19 @@ class Worker:
 
                 logger.info('Running task')
                 info.content = task['content']
-                self.task_run()
+                self.task_status('run')
                 tree_diagram.precheckOutput()
                 tree_diagram.precheckSubtitle()
                 tree_diagram.precleanTemporaryFiles()
                 tree_diagram.runMission()
+
+                self.task_status('finalize')
+                logger.info('Finishing task')
                 for s in task['postscript']:
                     self.shell(s)
 
-                logger.info('Finishing task')
-                self.task_finish()
+                logger.info('Task completed')
+                self.task_status('complete')
 
             except ExitException as e:
                 logger.error(f'Mission exited with error code {e.code}')

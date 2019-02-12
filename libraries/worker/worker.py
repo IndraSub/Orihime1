@@ -5,6 +5,7 @@ import logging
 import pathlib
 import os
 import subprocess
+import hashlib
 import yaml
 import requests
 
@@ -82,7 +83,7 @@ class Worker:
                 self.task_prepare()
                 logger.info('Downloading files')
                 for d in task['downloads']:
-                    self.download(d['url'], d['path'])
+                    self.download(d['url'], d['path'], d['sha256sum'])
                 logger.info('Running prescripts')
                 for s in task['prescript']:
                     self.shell(s)
@@ -114,17 +115,20 @@ class Worker:
                 self.task_id = None
                 time.sleep(self.config['PollingInterval'])
 
-    def download(self, url, path):
+    def download(self, url, path, sha256sum):
         path = os.path.join(info.working_directory, **path.split('/'))
         pathlib.Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
+        h = hashlib.sha256()
         if url.startswith('http://') or url.startswith('https://'):
             with requests.get(url, stream=True) as r:
                 with open(path, 'wb') as f:
                     for chunk in r.iter_content(chunk_size=1024 * 256):
                         if chunk: # filter out keep-alive new chunks
                             f.write(chunk)
+                            h.update(chunk)
         else:
             raise Exception(f'Unknown url: {url}')
+        assert sha256sum.lower() == h.hexdigest()
 
     def shell(self, command):
         process = subprocess.Popen(command, shell=True)

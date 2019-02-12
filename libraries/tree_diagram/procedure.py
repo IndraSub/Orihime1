@@ -254,6 +254,15 @@ def missionComplete():
     writeEventName('Mission Complete')
     invokePipeline([[info.MEDIAINFO, output]])
 
+def runMission():
+    missionReport()
+    processVideo()
+    processAudio()
+    mkvMerge()
+    mkvMetainfo()
+    cleanTemporaryFiles(force=True)
+    missionComplete()
+
 def main() -> None:
     load_missions()
     for idx in range(len(missions['missions'])):
@@ -263,10 +272,4 @@ def main() -> None:
     precleanTemporaryFiles()
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)
-        missionReport()
-        processVideo()
-        processAudio()
-        mkvMerge()
-        mkvMetainfo()
-        cleanTemporaryFiles(force=True)
-        missionComplete()
+        runMission()

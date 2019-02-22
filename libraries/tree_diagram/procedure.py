@@ -7,14 +7,14 @@ import shutil
 import io
 import logging
 import json
+import yaml
+import requests
 
 from . import info
 from .kit import writeEventName, assertFileWithExit, choices, padUnicode, ExitException
 from .process_utils import invokePipeline
 from .asscheck import checkAssFonts
 from .audio_utils import extractAudio, trimAudio, encodeAudio, mergeAndTrimAudio
-
-import yaml
 
 logger = logging.getLogger('tree_diagram')
 
@@ -24,6 +24,7 @@ temporary = os.path.join(working_directory, 'temporary')
 info.working_directory = working_directory
 info.temporary = temporary
 info.autorun = False
+info.report_endpoint = None
 
 missions = None
 
@@ -38,6 +39,8 @@ def load_missions():
         missions = yaml.load(f)
         if missions is None:
             missions = {}
+        if 'report' in missions:
+            info.report_endpoint = missions['report']
 
     info.autorun = missions.get('autorun', False)
 
@@ -92,6 +95,10 @@ def missionReport() -> None:
         answer = choices(message, options, answer)
     if answer == 1:
         raise ExitException()
+
+    if info.report_endpoint is not None:
+        report = f'[{info.node}] Mission Start: {content["title"]}'
+        requests.post(info.report_endpoint, report)
 
 def precheckOutput() -> None:
     writeEventName('Check output file')
@@ -253,14 +260,23 @@ def missionComplete():
     output = os.path.join(working_directory, content['output']['filename'])
     writeEventName('Mission Complete')
     invokePipeline([[info.MEDIAINFO, output]])
+    if info.report_endpoint is not None:
+        report = f'[{info.node}] Mission Complete: {content["title"]}'
+        requests.post(info.report_endpoint, report)
 
 def runMission():
     missionReport()
-    processVideo()
-    processAudio()
-    mkvMerge()
-    mkvMetainfo()
-    cleanTemporaryFiles(force=True)
+    try:
+        processVideo()
+        processAudio()
+        mkvMerge()
+        mkvMetainfo()
+        cleanTemporaryFiles(force=True)
+    except Exception as e:
+        if info.report_endpoint is not None:
+            report = f'[{info.node}] Mission Failed With Exception: {e}'
+            requests.post(info.report_endpoint, report)
+        raise
     missionComplete()
 
 def main() -> None:

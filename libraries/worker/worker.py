@@ -169,7 +169,7 @@ class Worker:
                     continue
                 assert requests.put(self.ep + f'/task/{task_id}', data={
                     'client_id': self.client_id,
-                    'status': self.status
+                    'task_status': self.status
                 }).status_code == 200
                 self.heartbeat_sent = True
                 self.heartbeat_cond.notify_all()

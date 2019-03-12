@@ -57,10 +57,11 @@ class Worker:
         self.client_id = r.json()['client_id']
 
     def task_status(self, status):
-        self.status = status
-        self.heartbeat_sent = False
-        self.heartbeat_cond.notify_all()
-        self.heartbeat_cond.wait_for(lambda: self.heartbeat_sent)
+        with self.heartbeat_cond:
+            self.status = status
+            self.heartbeat_sent = False
+            self.heartbeat_cond.notify_all()
+            self.heartbeat_cond.wait_for(lambda: self.heartbeat_sent)
 
     def task_fail(self):
         try:
@@ -144,15 +145,16 @@ class Worker:
             raise Exception(f'Command exited with code {process.returncode}: {command}')
 
     def heartbeat(self):
-        while True:
-            self.heartbeat_cond.wait(self.config['Heartbeat'])
-            task_id = self.task_id
-            if task_id is None:
-                assert self.heartbeat_sent
-                continue
-            assert requests.put(self.ep + f'/task/{task_id}', data={
-                'client_id': self.client_id,
-                'status': self.status
-            }).status_code == 200
-            self.heartbeat_sent = True
-            self.heartbeat_cond.notify_all()
+        with self.heartbeat_cond:
+            while True:
+                self.heartbeat_cond.wait(self.config['Heartbeat'])
+                task_id = self.task_id
+                if task_id is None:
+                    assert self.heartbeat_sent
+                    continue
+                assert requests.put(self.ep + f'/task/{task_id}', data={
+                    'client_id': self.client_id,
+                    'status': self.status
+                }).status_code == 200
+                self.heartbeat_sent = True
+                self.heartbeat_cond.notify_all()

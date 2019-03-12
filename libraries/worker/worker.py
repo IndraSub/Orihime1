@@ -79,7 +79,7 @@ class Worker:
                     'client_id': self.client_id,
                 })
                 if r.status_code != 200 or r.json()['code'] != 200:
-                    logger.warning('Failed to fetch new task')
+                    logger.warning('Failed to fetch task list')
                     continue
                 task_list = r.json()
                 if not task_list['task_list']:
@@ -87,6 +87,13 @@ class Worker:
                     continue
                 with self.heartbeat_cond:
                     self.task_id = task_list['task_list'][0]
+
+                r = requests.post(self.ep + f'/task/{self.task_id}', data={
+                    'client_id': self.client_id,
+                })
+                if r.status_code != 200 or r.json()['code'] != 200:
+                    logger.warning('Failed to apply new task')
+                    continue
 
                 r = requests.get(self.ep + f'/task/{self.task_id}', params={
                     'client_id': self.client_id,

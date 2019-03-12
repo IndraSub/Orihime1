@@ -41,7 +41,7 @@ class Worker:
             'token': self.token,
             'client_info': client_info
         })
-        if r.code != 200:
+        if r.status_code != 200:
             raise Exception('Failed to register the worker')
         self.client_id = r.json()['client_id']
 
@@ -49,7 +49,7 @@ class Worker:
         assert requests.post(self.ep + f'/task/{self.task_id}', data={
             'client_id': self.client_id,
             'status': status
-        }).code == 200
+        }).status_code == 200
     def task_fail(self):
         try:
             self.task_status('fail')
@@ -63,7 +63,7 @@ class Worker:
                 r = requests.post(self.ep + '/task', data={
                     'client_id': self.client_id,
                 })
-                if r.code != 200:
+                if r.status_code != 200:
                     logger.warning('Failed to fetch new task')
                     continue
                 task = r.json()

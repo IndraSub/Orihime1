@@ -36,6 +36,7 @@ class Worker:
         self.heartbeat_sent = True
         self.task_id = None
         self.status = TASK_STATUS_WAITING
+        self.heartbeat_thread.start()
 
     def load_config(self, filepath):
         with open(filepath) as f:

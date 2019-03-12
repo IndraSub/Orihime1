@@ -129,6 +129,9 @@ class Worker:
                 self.task_status(TASK_STATUS_FINISHED)
                 logger.info('Task completed')
 
+            except KeyboardInterrupt:
+                logger.info("Ctrl-c pressed, program exit")
+                exit(0)
             except ExitException as e:
                 logger.error(f'Mission exited with error code {e.code}')
                 logger.debug(f'Running task:')

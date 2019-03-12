@@ -80,11 +80,20 @@ class Worker:
                 if r.status_code != 200:
                     logger.warning('Failed to fetch new task')
                     continue
-                task = r.json()
-                if not task['task_list']:
+                task_list = r.json()
+                if not task_list['task_list']:
                     logger.info('No new task')
                     continue
-                self.task_id = task['task_list'][0]
+                with self.heartbeat_cond:
+                    self.task_id = task_list['task_list'][0]
+
+                r = requests.get(self.ep + f'/task/{self.task_id}', params={
+                    'client_id': self.client_id,
+                })
+                if r.status_code != 200:
+                    logger.warning('Failed to fetch new task')
+                    continue
+                task = r.json()['task_data']
 
                 self.task_status(TASK_STATUS_STARTED)
                 logger.info('Downloading files')
@@ -121,7 +130,9 @@ class Worker:
                 logger.debug(yaml.dump(task, default_flow_style=False))
                 self.task_fail()
             finally:
-                self.task_id = None
+                with self.heartbeat_cond:
+                    self.task_id = None
+                    self.status = TASK_STATUS_WAITING
                 time.sleep(self.config['PollingInterval'])
 
     def download(self, url, path, sha256sum):

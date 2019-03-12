@@ -107,6 +107,7 @@ class Worker:
                 self.task_status(TASK_STATUS_RUN)
                 logger.info('Running task')
                 info.content = task['content']
+                info.autorun = True
                 syncContent()
                 tree_diagram.precheckOutput()
                 tree_diagram.precheckSubtitle()

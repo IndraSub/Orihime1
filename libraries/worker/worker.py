@@ -11,7 +11,7 @@ import yaml
 import requests
 
 import libraries.tree_diagram as tree_diagram
-from tree_diagram import info, ExitException
+from libraries.tree_diagram import info, ExitException
 
 logger = logging.getLogger('tree_diagram:worker')
 

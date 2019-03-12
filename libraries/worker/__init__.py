@@ -3,7 +3,7 @@
 import os
 
 import libraries.tree_diagram as tree_diagram
-from tree_diagram import info
+from libraries.tree_diagram import info
 
 from .worker import Worker
 

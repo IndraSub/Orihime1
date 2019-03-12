@@ -54,7 +54,7 @@ class Worker:
             'token': self.token,
             'client_info': client_info
         })
-        if r.status_code != 200:
+        if r.status_code != 200 or r.json()['code'] != 200:
             raise Exception('Failed to register the worker')
         self.client_id = r.json()['client_id']
 
@@ -78,7 +78,7 @@ class Worker:
                 r = requests.get(self.ep + '/task', params={
                     'client_id': self.client_id,
                 })
-                if r.status_code != 200:
+                if r.status_code != 200 or r.json()['code'] != 200:
                     logger.warning('Failed to fetch new task')
                     continue
                 task_list = r.json()
@@ -91,7 +91,7 @@ class Worker:
                 r = requests.get(self.ep + f'/task/{self.task_id}', params={
                     'client_id': self.client_id,
                 })
-                if r.status_code != 200:
+                if r.status_code != 200 or r.json()['code'] != 200:
                     logger.warning('Failed to fetch new task')
                     continue
                 task = r.json()['task_data']
@@ -167,9 +167,11 @@ class Worker:
                 if task_id is None:
                     assert self.heartbeat_sent
                     continue
-                assert requests.put(self.ep + f'/task/{task_id}', data={
+                r = requests.put(self.ep + f'/task/{task_id}', data={
                     'client_id': self.client_id,
                     'task_status': self.status
-                }).status_code == 200
+                })
+                if r.status_code != 200 or r.json()['code'] != 200:
+                    logger.warning(r.text)
                 self.heartbeat_sent = True
                 self.heartbeat_cond.notify_all()

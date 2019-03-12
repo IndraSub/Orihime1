@@ -12,7 +12,7 @@ import yaml
 import requests
 
 import libraries.tree_diagram as tree_diagram
-from libraries.tree_diagram import info, ExitException
+from libraries.tree_diagram import info, ExitException, syncContent
 
 logger = logging.getLogger('tree_diagram:worker')
 
@@ -107,6 +107,7 @@ class Worker:
                 self.task_status(TASK_STATUS_RUN)
                 logger.info('Running task')
                 info.content = task['content']
+                syncContent()
                 tree_diagram.precheckOutput()
                 tree_diagram.precheckSubtitle()
                 tree_diagram.precleanTemporaryFiles()

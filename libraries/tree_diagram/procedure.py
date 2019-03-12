@@ -264,6 +264,11 @@ def missionComplete():
         report = f'[{info.node}] Mission Complete: {content["title"]}'
         requests.post(info.report_endpoint, report)
 
+def syncContent():
+    global content
+    if hasattr(info, 'content'):
+        content = info.content
+
 def runMission():
     missionReport()
     try:

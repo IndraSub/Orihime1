@@ -6,6 +6,7 @@ import pathlib
 import os
 import subprocess
 import hashlib
+import threading
 import yaml
 import requests
 
@@ -46,7 +47,7 @@ class Worker:
         self.client_id = r.json()['client_id']
 
     def task_status(self, status):
-        assert requests.post(self.ep + f'/task/{self.task_id}', data={
+        assert requests.put(self.ep + f'/task/{self.task_id}', data={
             'client_id': self.client_id,
             'status': status
         }).status_code == 200
@@ -57,10 +58,11 @@ class Worker:
             pass
 
     def run(self):
+        self.heartbeat_thread = threading.Thread(target=self.heartbeat)
         while True:
             try:
                 logger.info('Polling new task')
-                r = requests.post(self.ep + '/task', data={
+                r = requests.get(self.ep + '/task', params={
                     'client_id': self.client_id,
                 })
                 if r.status_code != 200:
@@ -130,3 +132,6 @@ class Worker:
         process.wait()
         if process.returncode != 0:
             raise Exception(f'Command exited with code {process.returncode}: {command}')
+
+    def heartbeat(self):
+        pass

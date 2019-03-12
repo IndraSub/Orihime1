@@ -79,10 +79,10 @@ class Worker:
                     logger.warning('Failed to fetch new task')
                     continue
                 task = r.json()
-                if task is None:
+                if not task['task_list']:
                     logger.info('No new task')
                     continue
-                self.task_id = task['task_id']
+                self.task_id = task['task_list'][0]
 
                 self.task_status(TASK_STATUS_STARTED)
                 logger.info('Downloading files')

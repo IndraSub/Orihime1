@@ -8,6 +8,6 @@ handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(name)s:%(levelname)s:%(message)s')
 handler.setFormatter(formatter)
-logging.getLogger().addHandler(handler)
+logging.getLogger('tree_diagram:worker').addHandler(handler)
 
 worker.main()

@@ -7,6 +7,7 @@ import os
 import subprocess
 import hashlib
 import threading
+import traceback
 import yaml
 import requests
 
@@ -124,8 +125,8 @@ class Worker:
                 logger.debug(f'Running task:')
                 logger.debug(yaml.dump(task, default_flow_style=False))
                 self.task_fail()
-            except Exception as e:
-                logger.error(e)
+            except Exception:
+                logger.error(traceback.format_exc())
                 logger.debug(f'Running task:')
                 logger.debug(yaml.dump(task, default_flow_style=False))
                 self.task_fail()

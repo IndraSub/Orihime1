@@ -15,6 +15,13 @@ from tree_diagram import info, ExitException
 
 logger = logging.getLogger('tree_diagram:worker')
 
+TASK_STATUS_WAITING = 0
+TASK_STATUS_STARTED = 1
+TASK_STATUS_RUN = 10
+TASK_STATUS_FINALIZE = 90
+TASK_STATUS_FINISHED = 100
+TASK_STATUS_ERROR = -1
+
 class Worker:
     def __init__(self):
         self.config = { # default config
@@ -24,8 +31,11 @@ class Worker:
         self.ep = None
         self.token = None
         self.client_id = None
-        self.heartbeat_thread = None
+        self.heartbeat_thread = threading.Thread(target=self.heartbeat)
+        self.heartbeat_cond = threading.Condition()
+        self.heartbeat_sent = True
         self.task_id = None
+        self.status = TASK_STATUS_WAITING
 
     def load_config(self, filepath):
         with open(filepath) as f:
@@ -47,18 +57,18 @@ class Worker:
         self.client_id = r.json()['client_id']
 
     def task_status(self, status):
-        assert requests.put(self.ep + f'/task/{self.task_id}', data={
-            'client_id': self.client_id,
-            'status': status
-        }).status_code == 200
+        self.status = status
+        self.heartbeat_sent = False
+        self.heartbeat_cond.notify_all()
+        self.heartbeat_cond.wait_for(lambda: self.heartbeat_sent)
+
     def task_fail(self):
         try:
-            self.task_status('fail')
+            self.task_status(TASK_STATUS_ERROR)
         except Exception:
             pass
 
     def run(self):
-        self.heartbeat_thread = threading.Thread(target=self.heartbeat)
         while True:
             try:
                 logger.info('Polling new task')
@@ -74,7 +84,7 @@ class Worker:
                     continue
                 self.task_id = task['task_id']
 
-                self.task_status('prepare')
+                self.task_status(TASK_STATUS_STARTED)
                 logger.info('Downloading files')
                 for d in task['downloads']:
                     self.download(d['url'], d['path'], d['sha256sum'])
@@ -82,21 +92,21 @@ class Worker:
                 for s in task['prescript']:
                     self.shell(s)
 
+                self.task_status(TASK_STATUS_RUN)
                 logger.info('Running task')
                 info.content = task['content']
-                self.task_status('run')
                 tree_diagram.precheckOutput()
                 tree_diagram.precheckSubtitle()
                 tree_diagram.precleanTemporaryFiles()
                 tree_diagram.runMission()
 
-                self.task_status('finalize')
+                self.task_status(TASK_STATUS_FINALIZE)
                 logger.info('Finishing task')
                 for s in task['postscript']:
                     self.shell(s)
 
+                self.task_status(TASK_STATUS_FINISHED)
                 logger.info('Task completed')
-                self.task_status('complete')
 
             except ExitException as e:
                 logger.error(f'Mission exited with error code {e.code}')
@@ -134,4 +144,15 @@ class Worker:
             raise Exception(f'Command exited with code {process.returncode}: {command}')
 
     def heartbeat(self):
-        pass
+        while True:
+            self.heartbeat_cond.wait(self.config['Heartbeat'])
+            task_id = self.task_id
+            if task_id is None:
+                assert self.heartbeat_sent
+                continue
+            assert requests.put(self.ep + f'/task/{task_id}', data={
+                'client_id': self.client_id,
+                'status': self.status
+            }).status_code == 200
+            self.heartbeat_sent = True
+            self.heartbeat_cond.notify_all()

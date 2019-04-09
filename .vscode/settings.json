@@ -1,4 +1,7 @@
 {
     "python.linting.enabled": true,
-    "python.linting.pylintArgs": ["--rcfile=.pylintrc"]
+    "python.linting.pylintArgs": [
+        "--rcfile=.pylintrc"
+    ],
+    "python.linting.pylintEnabled": true
 }

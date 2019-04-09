@@ -265,8 +265,14 @@ def resolveDependency(filepath: str) -> None:
             for runpath in fileinfo['runpath']:
                 findpaths.append(replace_rpath(runpath))
             if fileinfo['bits'] == 64:
-                findpaths += ['/lib64', '/usr/lib64']
-            findpaths += ['/lib', '/usr/lib']
+                findpaths += ['/lib64', '/usr/lib64', '/usr/local/lib64',
+                              '/lib/x86_64-linux-gnu', '/usr/lib/x86_64-linux-gnu',
+                              '/usr/local/lib/x86_64-linux-gnu']
+            else:
+                findpaths += ['/lib32', '/usr/lib32', '/usr/local/lib32',
+                              '/lib/i386-linux-gnu', '/usr/lib/i386-linux-gnu',
+                              '/usr/local/lib/i386-linux-gnu']
+            findpaths += ['/lib', '/usr/lib', '/usr/local/lib']
         depfilepath = None
         for path in findpaths:
             if ignore_case and os.path.isdir(path):

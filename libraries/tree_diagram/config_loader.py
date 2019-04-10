@@ -1,5 +1,30 @@
 #!/usr/bin/env python3
 
+'''
+INDRA Config Loader
+
+Directives:
+  - $include: <filepath>
+    Include YAML document from filepath, and mix into current object.
+    Filepath could be absolute (starts with /) and relative.
+    The absolute path is relative to the root_path, A.K.A. working_directory.
+    Only *nix path style (/) is supported. Auto conversion happens on Windows.
+  - $ref: <jsonpath>
+    Reference another object in this document. The root object for jsonpath is
+    always the top-level document (not the top-level object of current file).
+    If there is exactly one match, the result is that matched document.
+    Otherwise the result is a list of matched documents (empty list is possible).
+
+Mix-in rules:
+  - If an object has one directive and no other fields, then the object itself
+    is replaced by the result of the directive.
+  - If a list has an item that resolves to be a list, the inner list is concatenated
+    into the outer list.
+  - In normal cases, the fields of referenced target is mixed into the current object.
+    So you can override fields by writing them in the current object.
+'''
+
+
 import os
 import sys
 import json

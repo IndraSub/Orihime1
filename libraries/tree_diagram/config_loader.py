@@ -6,6 +6,15 @@ import json
 import yaml
 from jsonpath2.path import Path as jsonpath
 
+def shallow_eq(a, b):
+    if type(a) is not type(b):
+        return False
+    if isinstance(a, list):
+        return [id(v) for v in a] == [id(v) for v in b]
+    if isinstance(a, dict):
+        return {k: id(v) for k, v in a.items()} == {k: id(v) for k, v in b.items()}
+    return a == b
+
 class ParseError(Exception):
     pass
 
@@ -21,17 +30,19 @@ class UnresolvedDict(Unresolved):
         super().__init__(ctx)
         self.mixins = mixins
         self.original = dict(obj)
+        self.orig_concrete = {}
         self.resolved = {}
     def update(self):
         updated = False
-        new_obj = self.ctx.concrete(self.original, {})
+        self.orig_concrete = self.ctx.concrete(self.original, self.orig_concrete)
+        new_obj = dict(self.orig_concrete)
         for mixin in self.mixins:
             if not isinstance(mixin.resolved, dict):
                 continue
             for k in mixin.resolved:
                 if k not in new_obj:
                     new_obj[k] = mixin.resolved[k]
-        if self.resolved != new_obj:
+        if not shallow_eq(self.resolved, new_obj):
             updated = True
             self.resolved.clear()
             self.resolved.update(new_obj)
@@ -61,7 +72,7 @@ class UnresolvedList(Unresolved):
             else:
                 self.concrete_list[i] = self.ctx.concrete(it, self.concrete_list[i])
                 new_list.append(self.concrete_list[i])
-        if new_list != self.resolved:
+        if not shallow_eq(new_list, self.resolved):
             updated = True
             self.resolved = new_list
         return updated
@@ -181,8 +192,7 @@ class ParseContext:
 
     def concrete(self, abs, con):
         if isinstance(abs, Unresolved):
-            if con is not abs.resolved:
-                return abs.resolved
+            con = abs.resolved
         elif isinstance(abs, dict):
             if not isinstance(con, dict):
                 con = {}

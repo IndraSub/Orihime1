@@ -224,7 +224,7 @@ class ParseContext:
                 break
         circular = self.update_one()
         if circular:
-            raise ParseError('Circular references')
+            raise ParseError(f'Circular references: at {self.last_updated.cur_pos}, in {self.last_updated.cur_file}')
 
     def check(self):
         for unres in self.unresolved:
@@ -235,18 +235,24 @@ class ParseContext:
         self.check()
         return self.expand_str(self.concrete_obj)
 
-    def expand_str(self, doc):
+    def expand_str(self, doc, expanded={}):
+        if id(doc) in expanded:
+            return expanded[id(doc)]
         if isinstance(doc, dict):
             result = {}
+            expanded[id(doc)] = result
             for k in doc:
-                result[k] = self.expand_str(doc[k])
-            return result
-        if isinstance(doc, list):
-            return list(map(self.expand_str, doc))
-        if isinstance(doc, str):
-            return self.translate_str(doc)
+                result[k] = self.expand_str(doc[k], expanded)
+        elif isinstance(doc, list):
+            result = []
+            expanded[id(doc)] = result
+            for d in doc:
+                result.append(self.expand_str(d, expanded))
+        elif isinstance(doc, str):
+            result = self.translate_str(doc)
         else:
-            return doc
+            result = doc
+        return result
 
     def translate_str(self, s, circular=set()):
         if id(s) in circular:
@@ -298,5 +304,205 @@ class ParseContext:
         circular.remove(id(s))
         return ''.join(translated)
 
+def test_include():
+    with open('conf1.yaml', 'w') as f:
+        f.write('''
+        top_level_obj: conf1
+        test_include_conf3:
+            $include: conf3.yaml
+        test_include_conf4:
+            $include: conf4.yaml
+        ''')
+    with open('conf2.yaml', 'w') as f:
+        f.write('''
+        - top_level_arr
+        - top_level_arr
+        ''')
+    with open('conf3.yaml', 'w') as f:
+        f.write('''
+        conf3_arr:
+          $include: conf2.yaml
+        ''')
+    with open('conf4.yaml', 'w') as f:
+        f.write('''
+        $include: conf3.yaml
+        arr:
+          - $include: conf2.yaml
+        ''')
+    assert ParseContext(os.environ['PWD'], {'$include': 'conf4.yaml'}).parse() == \
+        {'arr': ['top_level_arr', 'top_level_arr'], 'conf3_arr': ['top_level_arr', 'top_level_arr']}
+    assert ParseContext(os.environ['PWD'], {'$include': 'conf2.yaml'}).parse() == \
+        ['top_level_arr', 'top_level_arr']
+    assert ParseContext(os.environ['PWD'], {'$include': 'conf1.yaml'}).parse() == \
+        {
+            'top_level_obj': 'conf1',
+            'test_include_conf3': {
+                'conf3_arr': ['top_level_arr', 'top_level_arr']
+            },
+            'test_include_conf4': {
+                'arr': ['top_level_arr', 'top_level_arr'],
+                'conf3_arr': ['top_level_arr', 'top_level_arr']
+            }
+        }
+
+def test_ref():
+    assert ParseContext(os.environ['PWD'], {
+        'obj1': {'$ref': '$.refer[*].id'},
+        'obj2': {'$ref': '$.refer[1].id'},
+        'obj3': {'$ref': '$.refer[3].id'},
+        'obj4': [{'$ref': '$.refer[*].id'}],
+        'refer': [{'id': 'a'}, {'id': 'b'}]
+    }).parse() == {'obj1': ['a', 'b'], 'obj2': 'b', 'obj3': [], 'obj4': ['a', 'b'], 'refer': [{'id': 'a'}, {'id': 'b'}]}
+
+def test_object_circular():
+    with open('conf1.yaml', 'w') as f:
+        f.write('''
+        top_level_conf1: 1
+        conf2:
+          $include: conf2.yaml
+        ''')
+    with open('conf2.yaml', 'w') as f:
+        f.write('''
+        top_level_conf2: 1
+        conf1:
+          $include: conf1.yaml
+        ''')
+    result = ParseContext(os.environ['PWD'], {'$include': 'conf1.yaml'}).parse()
+    assert result['conf2']['conf1']['conf2'] is result['conf2'] # top level is different
+
+def test_object_mixin():
+    with open('conf1.yaml', 'w') as f:
+        f.write('''
+        top_level_conf1: 1
+        $include: conf2.yaml
+        ''')
+    with open('conf2.yaml', 'w') as f:
+        f.write('''
+        top_level_conf2: 1
+        $include: conf1.yaml
+        ''')
+    assert ParseContext(os.environ['PWD'], {'$include': 'conf1.yaml'}).parse() == \
+        {'top_level_conf1': 1, 'top_level_conf2': 1}
+
+def test_list_circular():
+    with open('conf1.yaml', 'w') as f:
+        f.write('''
+        - arr_conf1
+        - $include: conf2.yaml
+        ''')
+    with open('conf2.yaml', 'w') as f:
+        f.write('''
+        - arr_conf2
+        - $include: conf1.yaml
+        ''')
+    try:
+        ParseContext(os.environ['PWD'], {'$include': 'conf1.yaml'}).parse()
+    except ParseError:
+        return
+    assert False
+
+def test_wrong_mixin_type():
+    with open('conf1.yaml', 'w') as f:
+        f.write('''
+        $include: conf2.yaml
+        obj: a
+        ''')
+    with open('conf2.yaml', 'w') as f:
+        f.write('''
+        - arr_conf2
+        ''')
+    try:
+        ParseContext(os.environ['PWD'], {'$include': 'conf1.yaml'}).parse()
+    except ParseError:
+        return
+    assert False
+
+def test_arr_ref_obj():
+    assert ParseContext(os.environ['PWD'], {
+        'arr': [{'$ref': '$.obj'}],
+        'obj': {'test': 'yes'}
+    }).parse() == {'arr': [{'test': 'yes'}], 'obj': {'test': 'yes'}}
+
+def test_fail_load_file():
+    try:
+        ParseContext(os.environ['PWD'], {'$include': 'confbad.yaml'}).parse()
+    except ParseError:
+        return
+    assert False
+
+def test_abs_path():
+    os.makedirs('./conftest/a', exist_ok=True)
+    with open('conftest/a/conf1.yaml', 'w') as f:
+        f.write('''
+        - $include: conf2.yaml
+        - $include: /a/conf3.yaml
+        ''')
+    with open('conftest/a/conf2.yaml', 'w') as f:
+        f.write('''
+        - conf2
+        ''')
+    with open('conftest/a/conf3.yaml', 'w') as f:
+        f.write('''
+        - conf3
+        ''')
+    assert ParseContext(os.environ['PWD'] + '/conftest', {'$include': '/a/conf1.yaml'}).parse() == ['conf2', 'conf3']
+
+def test_bad_json_path():
+    try:
+        ParseContext(os.environ['PWD'], {'$ref': '$$${{{}}}'}).parse()
+    except ParseError:
+        return
+    assert False
+
+def test_string():
+    assert ParseContext(os.environ['PWD'], [0, '{$[0]} {$[2]}{$.nonexist}', '{$[3]}', 'a']).parse() == [0, '0 a', 'a', 'a']
+    assert ParseContext(os.environ['PWD'], '{{').parse() == '{'
+    assert ParseContext(os.environ['PWD'], '}}').parse() == '}'
+
+def test_string_circular():
+    try:
+        ParseContext(os.environ['PWD'], [0, '{$[0]} {$[2]}', '{$[2]}', 'a']).parse()
+    except ParseError:
+        return
+    assert False
+
+def test_string_amb():
+    try:
+        ParseContext(os.environ['PWD'], [0, '{$[0]} {$[2]} {$[*]}', '{$[3]}', 'a']).parse()
+    except ParseError:
+        return
+    assert False
+
+def test_string_non_scalar():
+    try:
+        ParseContext(os.environ['PWD'], [0, '{$[0]} {$[2]}', '{$[4]}', 'a', {'x': 1}]).parse()
+    except ParseError:
+        return
+    assert False
+
+def test_string_incomplete():
+    try:
+        ParseContext(os.environ['PWD'], [0, '{$[0]} {$[2]', '{$[3]}', 'a']).parse()
+    except ParseError:
+        return
+    assert False
+
 if __name__ == '__main__':
-    print(ParseContext(os.environ['PWD'], {'$include': sys.argv[1]}).parse())
+    if len(sys.argv) >= 2:
+        print(ParseContext(os.environ['PWD'], {'$include': sys.argv[1]}).parse())
+    else:
+        test_include()
+        test_ref()
+        test_object_circular()
+        test_object_mixin()
+        test_list_circular()
+        test_wrong_mixin_type()
+        test_arr_ref_obj()
+        test_fail_load_file()
+        test_abs_path()
+        test_bad_json_path()
+        test_string()
+        test_string_circular()
+        test_string_amb()
+        test_string_non_scalar()
+        test_string_incomplete()        

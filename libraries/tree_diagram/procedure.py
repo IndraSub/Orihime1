@@ -15,6 +15,7 @@ from .kit import writeEventName, assertFileWithExit, choices, padUnicode, ExitEx
 from .process_utils import invokePipeline
 from .asscheck import checkAssFonts
 from .audio_utils import extractAudio, trimAudio, encodeAudio, mergeAndTrimAudio
+from .config_loader import ParseContext
 
 logger = logging.getLogger('tree_diagram')
 
@@ -25,6 +26,9 @@ info.working_directory = working_directory
 info.temporary = temporary
 info.autorun = False
 info.report_endpoint = None
+
+current_working = None
+content = None
 
 missions = None
 
@@ -44,17 +48,7 @@ def load_missions():
 
     info.autorun = missions.get('autorun', False)
 
-def loadCurrentWorking(idx: int) -> None:
-    global current_working
-    global content
-    current_working = os.path.join(working_directory, missions['missions'][idx])
-    if not os.path.exists(current_working):
-        logger.critical(f'{current_working} not found')
-        raise ExitException(-1)
-
-    with open(current_working, encoding='utf8') as f:
-        content = yaml.load(f)
-
+def parseContentV1(content: dict) -> dict:
     with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
         descriptions = yaml.load_all(f)
         content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
@@ -66,6 +60,32 @@ def loadCurrentWorking(idx: int) -> None:
     if 'subtitle' in content['source'] and content['source']['subtitle']:
         if 'filename' in content['source']['subtitle'] and content['source']['subtitle']['filename']:
             content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
+
+    return content
+
+def parseContentV2() -> dict:
+    return ParseContext(working_directory, {
+        '$include': os.path.relpath(current_working, working_directory)
+    }).parse()
+
+def loadCurrentWorking(idx: int) -> None:
+    global current_working
+    global content
+    current_working = os.path.join(working_directory, missions['missions'][idx])
+    if not os.path.exists(current_working):
+        logger.critical(f'{current_working} not found')
+        raise ExitException(-1)
+
+    with open(current_working, encoding='utf8') as f:
+        content = yaml.load(f)
+
+    if '$version' not in content or content['$version'] == 1:
+        content = parseContentV1(content)
+    elif content['$version'] == 2:
+        content = parseContentV2()
+    else:
+        logger.critical(f'Unsupported config version: {content["$version"]}')
+        raise ExitException(-1)
 
     info.current_working = current_working
     info.content = content

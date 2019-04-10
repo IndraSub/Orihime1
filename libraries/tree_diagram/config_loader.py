@@ -22,6 +22,12 @@ Mix-in rules:
     into the outer list.
   - In normal cases, the fields of referenced target is mixed into the current object.
     So you can override fields by writing them in the current object.
+
+String expansion:
+  - String expansion is the last step. Directives are not expanded.
+  - Use curly braces to insert JsonPath expression into strings.
+  - Double curly brace is collapsed into one. E.g. {{ -> {
+  - Objects and lists are not insertable.
 '''
 
 

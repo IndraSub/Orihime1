@@ -134,6 +134,7 @@ def loadBinaryInfo(filename: str):
     if filename != os.path.realpath(filename):
         raise Exception('must use real path (no symlinks)')
     fileinfo = {}
+    fileinfo['mtime'] = os.path.getmtime(filename)
     with open(filename, 'rb') as f:
         head = f.read(4)
         if head == b'\x7fELF':
@@ -358,7 +359,8 @@ def findVSPlugins() -> List[str]:
             path = os.path.join(root, name)
             if path.lower().endswith('.dll') or (info.system == 'Linux' and path.endswith('.so')):
                 path = os.path.realpath(path)
-                loadBinaryInfo(path)
+                if path not in info.binaries:
+                    loadBinaryInfo(path)
                 fileinfo = info.binaries[path]
                 if 'exports' not in fileinfo:
                     continue
@@ -388,7 +390,8 @@ def findAVSPlugins() -> List[str]:
             path = os.path.join(root, name)
             if path.lower().endswith('.dll') or (info.system == 'Linux' and path.endswith('.so')):
                 path = os.path.realpath(path)
-                loadBinaryInfo(path)
+                if path not in info.binaries:
+                    loadBinaryInfo(path)
                 fileinfo = info.binaries[path]
                 if 'exports' not in fileinfo:
                     continue
@@ -415,16 +418,20 @@ def loadBinCache():
     else:
         print('*** Cache file not found. Analyzing binary files on site. It may take a while... ***')
     info.binaries = cache.get('binaries', {})
-    info.vsfilters = cache.get('vsfilters', [])
-    info.avsfilters = cache.get('avsfilters', [])
+    for filepath in info.binaries.keys():
+        if not os.path.isfile(filepath):
+            del info.binaries[filepath]
+            continue
+        fileinfo = info.binaries[filepath]
+        if os.path.getmtime(filepath) != fileinfo.get('mtime'):
+            del info.binaries[filepath]
+            continue
 
 def saveBinCache():
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')
     with open(cachepath, 'w') as f:
         f.write(json.dumps({
             'binaries': info.binaries,
-            'vsfilters': info.vsfilters,
-            'avsfilters': info.avsfilters,
         }))
 
 def precheck() -> None:
@@ -506,10 +513,8 @@ def precheck() -> None:
         ]
     checkExecutables(executables)
 
-    if not info.vsfilters:
-        info.vsfilters = findVSPlugins()
-    if not info.avsfilters:
-        info.avsfilters = findAVSPlugins()
+    info.vsfilters = findVSPlugins()
+    info.avsfilters = findAVSPlugins()
     print(f'External VapourSynth Plugins #: {len(info.vsfilters)}')
     print(f'External AviSynth Plugins #: {len(info.avsfilters)}')
     saveBinCache()

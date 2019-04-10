@@ -466,7 +466,7 @@ def precheck() -> None:
         ('yaml', 'PyYAML'),
         ('pefile', 'pefile'),
         ('requests', 'requests'),
-        ('jsonpath_ng', 'jsonpath_ng'),
+        ('jsonpath2', 'jsonpath2'),
     ]
     if info.system == 'Windows':
         required_modules += [

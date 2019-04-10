@@ -4,7 +4,7 @@ import os
 import sys
 import json
 import yaml
-import jsonpath_ng as jsonpath
+from jsonpath2.path import Path as jsonpath
 
 class ParseError(Exception):
     pass
@@ -109,22 +109,25 @@ class UnresolvedFile(Unresolved):
 class UnresolvedJsonpath(Unresolved):
     def __init__(self, ctx, pattern):
         super().__init__(ctx)
-        try:
-            self.matcher = jsonpath.parse(pattern)
-        except Exception:
-            raise ParseError(f'Cannot parse JsonPath expression: {pattern}, in {self.cur_file}')
+        self.pattern = pattern
         self.resolved = None
     def update(self):
         updated = False
-        result = [m.value for m in self.matcher.find(self.ctx.concrete_obj)]
-        if len(result) == 1:
+        try:
+            result = self.ctx.execute_path(self.pattern)
+        except Exception:
+            result = None
+        if result and len(result) == 1:
             result = result[0]
         if result != self.resolved:
             updated = True
             self.resolved = result
         return updated
     def check(self):
-        pass
+        try:
+            self.ctx.execute_path(self.pattern)
+        except Exception:
+            raise ParseError(f'Unable to execute path expression: {self.pattern}, in {self.cur_file}')
 
 class ParseContext:
     def __init__(self, root_path, init_obj):
@@ -205,6 +208,9 @@ class ParseContext:
             if con is not abs:
                 reset(abs)
 
+    def execute_path(self, expr):
+        return [m.current_value for m in jsonpath.parse_str(expr).match(self.concrete_obj)]
+
     def update_one(self):
         updated = False
         for unres in self.unresolved:
@@ -233,9 +239,10 @@ class ParseContext:
     def parse(self):
         self.update()
         self.check()
-        return self.expand_str(self.concrete_obj)
+        result = self.expand_str(self.concrete_obj, {})
+        return result
 
-    def expand_str(self, doc, expanded={}):
+    def expand_str(self, doc, expanded):
         if id(doc) in expanded:
             return expanded[id(doc)]
         if isinstance(doc, dict):
@@ -249,12 +256,12 @@ class ParseContext:
             for d in doc:
                 result.append(self.expand_str(d, expanded))
         elif isinstance(doc, str):
-            result = self.translate_str(doc)
+            result = self.translate_str(doc, set())
         else:
             result = doc
         return result
 
-    def translate_str(self, s, circular=set()):
+    def translate_str(self, s, circular):
         if id(s) in circular:
             raise ParseError('Circular string expansion: ' + s)
         circular.add(id(s))
@@ -268,7 +275,11 @@ class ParseContext:
             if proc_mode and c == '}':
                 proc_mode = False
                 stacked_right_brace = False
-                targets = [m.value for m in jsonpath.parse(''.join(expr)).find(self.concrete_obj)]
+                expr = ''.join(expr)
+                try:
+                    targets = self.execute_path(expr)
+                except Exception:
+                    raise ParseError(f'Unable to execute Path expression: {expr}, in {s}')
                 expr = None
                 if len(targets) > 1:
                     raise ParseError('Ambiguous string expansion: ' + s)
@@ -505,4 +516,4 @@ if __name__ == '__main__':
         test_string_circular()
         test_string_amb()
         test_string_non_scalar()
-        test_string_incomplete()        
+        test_string_incomplete()

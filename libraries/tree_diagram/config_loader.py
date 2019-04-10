@@ -24,8 +24,7 @@ class UnresolvedDict(Unresolved):
         self.resolved = {}
     def update(self):
         updated = False
-        new_obj = {}
-        self.ctx.concrete(self.original, new_obj, None)
+        new_obj = self.ctx.concrete(self.original, {})
         for mixin in self.mixins:
             if not isinstance(mixin.resolved, dict):
                 continue
@@ -46,11 +45,13 @@ class UnresolvedList(Unresolved):
     def __init__(self, ctx, abstract_list):
         super().__init__(ctx)
         self.abstract_list = abstract_list
+        self.concrete_list = [None] * len(abstract_list)
         self.resolved = []
     def update(self):
         updated = False
         new_list = []
-        for it in self.abstract_list:
+        for i in range(0, len(self.abstract_list)):
+            it = self.abstract_list[i]
             if isinstance(it, Unresolved):
                 it = it.resolved
                 if isinstance(it, list):
@@ -58,7 +59,8 @@ class UnresolvedList(Unresolved):
                 else:
                     new_list.append(it)
             else:
-                new_list.append(it)
+                self.concrete_list[i] = self.ctx.concrete(it, self.concrete_list[i])
+                new_list.append(self.concrete_list[i])
         if new_list != self.resolved:
             updated = True
             self.resolved = new_list
@@ -97,11 +99,10 @@ class UnresolvedFile(Unresolved):
         if self.abstract is None:
             self.abstract = self.ctx.files[self.path]
             updated = True
-        def reset(concrete):
-            nonlocal updated
-            self.resolved = concrete
+        old_resolved = self.resolved
+        self.resolved = self.ctx.concrete(self.abstract, self.resolved)
+        if self.resolved is not old_resolved:
             updated = True
-        self.ctx.concrete(self.abstract, self.resolved, reset)
         return updated
     def check(self):
         pass
@@ -178,35 +179,29 @@ class ParseContext:
         else:
             return obj
 
-    def concrete(self, abs, con, reset):
+    def concrete(self, abs, con):
         if isinstance(abs, Unresolved):
             if con is not abs.resolved:
-                reset(abs.resolved)
+                return abs.resolved
         elif isinstance(abs, dict):
             if not isinstance(con, dict):
                 con = {}
-                reset(con)
             for k in abs:
                 if k not in con:
                     con[k] = None
-                def inner_reset(concrete):
-                    con[k] = concrete
-                self.concrete(abs[k], con[k], inner_reset)
+                con[k] = self.concrete(abs[k], con[k])
         elif isinstance(abs, list):
             if not isinstance(con, list):
                 con = []
-                reset(con)
             while len(con) > len(abs):
                 con.pop()
             while len(con) < len(abs):
                 con.append(None)
             for i in range(0, len(abs)):
-                def inner_reset(concrete):
-                    con[i] = concrete
-                self.concrete(abs[i], con[i], inner_reset)
+                con[i] = self.concrete(abs[i], con[i])
         else:
-            if con is not abs:
-                reset(abs)
+            con = abs
+        return con
 
     def execute_path(self, expr):
         return [m.current_value for m in jsonpath.parse_str(expr).match(self.concrete_obj)]
@@ -223,9 +218,7 @@ class ParseContext:
         i = 0
         while i < len(self.unresolved) + 1:
             i += 1
-            def inner_reset(con):
-                self.concrete_obj = con
-            self.concrete(self.abstract_obj, self.concrete_obj, inner_reset)
+            self.concrete_obj = self.concrete(self.abstract_obj, self.concrete_obj)
             if not self.update_one():
                 break
         circular = self.update_one()

@@ -49,14 +49,14 @@ def shallow_eq(a, b):
 class ParseError(Exception):
     pass
 
-class Unresolved:
+class AbstractNode:
     def __init__(self, ctx):
         self.ctx = ctx
         self.cur_pos = ctx.cur_pos
         self.cur_file = ctx.cur_file
         ctx.unresolved.append(self)
 
-class UnresolvedDict(Unresolved):
+class AbstractDict(AbstractNode):
     def __init__(self, ctx, obj, mixins):
         super().__init__(ctx)
         self.mixins = mixins
@@ -64,8 +64,7 @@ class UnresolvedDict(Unresolved):
         self.orig_concrete = {}
         self.resolved = {}
     def update(self):
-        updated = False
-        self.orig_concrete = self.ctx.concrete(self.original, self.orig_concrete)
+        self.orig_concrete, updated = self.ctx.make_concrete(self.original, self.orig_concrete)
         new_obj = dict(self.orig_concrete)
         for mixin in self.mixins:
             if not isinstance(mixin.resolved, dict):
@@ -83,7 +82,7 @@ class UnresolvedDict(Unresolved):
             if mixin.resolved and not isinstance(mixin.resolved, dict):
                 raise ParseError(f'Cannot mix {type(mixin.resolved)} into dict, at {self.cur_pos}, in {self.cur_file}')
 
-class UnresolvedList(Unresolved):
+class AbstractList(AbstractNode):
     def __init__(self, ctx, abstract_list):
         super().__init__(ctx)
         self.abstract_list = abstract_list
@@ -94,15 +93,16 @@ class UnresolvedList(Unresolved):
         new_list = []
         for i in range(0, len(self.abstract_list)):
             it = self.abstract_list[i]
-            if isinstance(it, Unresolved):
+            if isinstance(it, AbstractNode):
                 it = it.resolved
                 if isinstance(it, list):
                     new_list.extend(it)
                 else:
                     new_list.append(it)
             else:
-                self.concrete_list[i] = self.ctx.concrete(it, self.concrete_list[i])
+                self.concrete_list[i], u = self.ctx.make_concrete(it, self.concrete_list[i])
                 new_list.append(self.concrete_list[i])
+                updated = updated or u
         if not shallow_eq(new_list, self.resolved):
             updated = True
             self.resolved = new_list
@@ -110,7 +110,7 @@ class UnresolvedList(Unresolved):
     def check(self):
         pass
 
-class UnresolvedFile(Unresolved):
+class AbstractInclude(AbstractNode):
     def __init__(self, ctx, path, cur_path):
         super().__init__(ctx)
         if path.startswith('/'):
@@ -129,10 +129,10 @@ class UnresolvedFile(Unresolved):
                 raise ParseError(f'Failed to load {self.path}, in {self.cur_file}: {e}')
             old_pos = ctx.cur_pos
             ctx.cur_pos = '$'
-            ctx.files[self.path] = ctx.abstract(loaded, self.path)
+            ctx.files[self.path] = ctx.make_abstract(loaded, self.path)
             ctx.cur_pos = old_pos
         self.abstract = ctx.files[self.path]
-        if isinstance(self.abstract, Unresolved):
+        if isinstance(self.abstract, AbstractNode):
             self.resolved = self.abstract.resolved
         else:
             self.resolved = None
@@ -142,14 +142,15 @@ class UnresolvedFile(Unresolved):
             self.abstract = self.ctx.files[self.path]
             updated = True
         old_resolved = self.resolved
-        self.resolved = self.ctx.concrete(self.abstract, self.resolved)
+        self.resolved, u = self.ctx.make_concrete(self.abstract, self.resolved)
+        updated = updated or u
         if self.resolved is not old_resolved:
             updated = True
         return updated
     def check(self):
         pass
 
-class UnresolvedJsonpath(Unresolved):
+class AbstractRef(AbstractNode):
     def __init__(self, ctx, pattern):
         super().__init__(ctx)
         self.pattern = pattern
@@ -162,7 +163,7 @@ class UnresolvedJsonpath(Unresolved):
             result = None
         if result and len(result) == 1:
             result = result[0]
-        if result != self.resolved:
+        if not shallow_eq(result, self.resolved):
             updated = True
             self.resolved = result
         return updated
@@ -179,11 +180,11 @@ class ParseContext:
         self.root_path = root_path
         self.cur_file = None
         self.cur_pos = '$'
-        self.abstract_obj = self.abstract(init_obj, self.root_path)
+        self.abstract_obj = self.make_abstract(init_obj, self.root_path)
         self.concrete_obj = None
         self.last_updated = None
 
-    def abstract(self, obj, cur_path):
+    def make_abstract(self, obj, cur_path):
         if os.path.isfile(cur_path):
             self.cur_file = cur_path
         else:
@@ -195,54 +196,63 @@ class ParseContext:
             for k in obj:
                 self.cur_pos = old_pos + '.' + k
                 if k == '$ref':
-                    mixins.add(UnresolvedJsonpath(self, obj[k]))
+                    mixins.add(AbstractRef(self, obj[k]))
                 elif k == '$include':
-                    mixins.add(UnresolvedFile(self, obj[k], cur_path))
+                    mixins.add(AbstractInclude(self, obj[k], cur_path))
                 else:
-                    new_obj[k] = self.abstract(obj[k], cur_path)
+                    new_obj[k] = self.make_abstract(obj[k], cur_path)
             self.cur_pos = old_pos
             if not mixins:
                 return new_obj
             elif len(mixins) == 1 and not new_obj:
                 return mixins.pop()
             else:
-                return UnresolvedDict(self, new_obj, mixins)
+                return AbstractDict(self, new_obj, mixins)
         elif isinstance(obj, list):
             new_list = []
             old_pos = self.cur_pos
             for i in range(0, len(obj)):
                 self.cur_pos = old_pos + f'[{i}]'
-                new_list.append(self.abstract(obj[i], cur_path))
+                new_list.append(self.make_abstract(obj[i], cur_path))
             self.cur_pos = old_pos
-            if not any(map(lambda o: isinstance(o, Unresolved), new_list)):
+            if not any(map(lambda o: isinstance(o, AbstractNode), new_list)):
                 return new_list
             else:
-                return UnresolvedList(self, new_list)
+                return AbstractList(self, new_list)
         else:
             return obj
 
-    def concrete(self, abs, con):
-        if isinstance(abs, Unresolved):
+    def make_concrete(self, abs, con):
+        updated = False
+        if isinstance(abs, AbstractNode):
+            updated = con is not abs.resolved
             con = abs.resolved
         elif isinstance(abs, dict):
             if not isinstance(con, dict):
                 con = {}
+                updated = True
             for k in abs:
                 if k not in con:
                     con[k] = None
-                con[k] = self.concrete(abs[k], con[k])
+                con[k], u = self.make_concrete(abs[k], con[k])
+                updated = updated or u
         elif isinstance(abs, list):
             if not isinstance(con, list):
                 con = []
+                updated = True
             while len(con) > len(abs):
                 con.pop()
+                updated = True
             while len(con) < len(abs):
                 con.append(None)
+                updated = True
             for i in range(0, len(abs)):
-                con[i] = self.concrete(abs[i], con[i])
+                con[i], u = self.make_concrete(abs[i], con[i])
+                updated = updated or u
         else:
+            updated = con != abs
             con = abs
-        return con
+        return con, updated
 
     def execute_path(self, expr):
         return [m.current_value for m in jsonpath.parse_str(expr).match(self.concrete_obj)]
@@ -257,10 +267,11 @@ class ParseContext:
 
     def update(self):
         i = 0
-        while i < len(self.unresolved) + 1:
+        while i < len(self.unresolved) * 2 + 1:
             i += 1
-            self.concrete_obj = self.concrete(self.abstract_obj, self.concrete_obj)
-            if not self.update_one():
+            self.concrete_obj, updated = self.make_concrete(self.abstract_obj, self.concrete_obj)
+            updated = self.update_one() or updated
+            if not updated:
                 break
         circular = self.update_one()
         if circular:

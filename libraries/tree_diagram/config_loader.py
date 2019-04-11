@@ -37,7 +37,14 @@ import json
 import yaml
 from jsonpath2.path import Path as jsonpath
 
-def shallow_eq(a, b):
+import typing as t
+
+JsonArray = t.List['JsonValue']
+JsonObject = t.Dict[str, 'JsonValue']
+JsonValue = t.Union[None, bool, int, float, str, JsonArray, JsonObject]
+AbstractValue = t.Union[JsonValue, 'AbstractNode']
+
+def shallow_eq(a: JsonValue, b: JsonValue) -> bool:
     if type(a) is not type(b):
         return False
     if isinstance(a, list):
@@ -50,20 +57,25 @@ class ParseError(Exception):
     pass
 
 class AbstractNode:
-    def __init__(self, ctx):
+    def __init__(self, ctx: 'ParseContext'):
         self.ctx = ctx
         self.cur_pos = ctx.cur_pos
         self.cur_file = ctx.cur_file
+        self.resolved: JsonValue = None
         ctx.unresolved.append(self)
+    def update(self) -> bool:
+        return False
+    def check(self) -> None:
+        raise NotImplementedError
 
 class AbstractDict(AbstractNode):
-    def __init__(self, ctx, obj, mixins):
+    def __init__(self, ctx: 'ParseContext', obj: t.Dict[str, AbstractValue], mixins: t.Set[AbstractValue]):
         super().__init__(ctx)
         self.mixins = mixins
         self.original = dict(obj)
-        self.orig_concrete = {}
-        self.resolved = {}
-    def update(self):
+        self.orig_concrete: JsonObject = {}
+        self.resolved: JsonObject = {}
+    def update(self) -> bool:
         self.orig_concrete, updated = self.ctx.make_concrete(self.original, self.orig_concrete)
         new_obj = dict(self.orig_concrete)
         for mixin in self.mixins:
@@ -77,28 +89,28 @@ class AbstractDict(AbstractNode):
             self.resolved.clear()
             self.resolved.update(new_obj)
         return updated
-    def check(self):
+    def check(self) -> None:
         for mixin in self.mixins:
             if mixin.resolved and not isinstance(mixin.resolved, dict):
                 raise ParseError(f'Cannot mix {type(mixin.resolved)} into dict, at {self.cur_pos}, in {self.cur_file}')
 
 class AbstractList(AbstractNode):
-    def __init__(self, ctx, abstract_list):
+    def __init__(self, ctx: 'ParseContext', abstract_list: t.List[AbstractValue]):
         super().__init__(ctx)
         self.abstract_list = abstract_list
         self.concrete_list = [None] * len(abstract_list)
-        self.resolved = []
-    def update(self):
+        self.resolved: JsonArray = []
+    def update(self) -> bool:
         updated = False
-        new_list = []
+        new_list: JsonArray = []
         for i in range(0, len(self.abstract_list)):
             it = self.abstract_list[i]
             if isinstance(it, AbstractNode):
-                it = it.resolved
-                if isinstance(it, list):
-                    new_list.extend(it)
+                resolved = it.resolved
+                if isinstance(resolved, list):
+                    new_list.extend(resolved)
                 else:
-                    new_list.append(it)
+                    new_list.append(resolved)
             else:
                 self.concrete_list[i], u = self.ctx.make_concrete(it, self.concrete_list[i])
                 new_list.append(self.concrete_list[i])
@@ -107,11 +119,11 @@ class AbstractList(AbstractNode):
             updated = True
             self.resolved = new_list
         return updated
-    def check(self):
+    def check(self) -> None:
         pass
 
 class AbstractInclude(AbstractNode):
-    def __init__(self, ctx, path, cur_path):
+    def __init__(self, ctx: 'ParseContext', path: str, cur_path: str):
         super().__init__(ctx)
         if path.startswith('/'):
             self.path = os.path.join(ctx.root_path, *path.split('/'))
@@ -136,7 +148,7 @@ class AbstractInclude(AbstractNode):
             self.resolved = self.abstract.resolved
         else:
             self.resolved = None
-    def update(self):
+    def update(self) -> bool:
         updated = False
         if self.abstract is None:
             self.abstract = self.ctx.files[self.path]
@@ -147,50 +159,50 @@ class AbstractInclude(AbstractNode):
         if self.resolved is not old_resolved:
             updated = True
         return updated
-    def check(self):
+    def check(self) -> None:
         pass
 
 class AbstractRef(AbstractNode):
-    def __init__(self, ctx, pattern):
+    def __init__(self, ctx: 'ParseContext', pattern: str):
         super().__init__(ctx)
         self.pattern = pattern
         self.resolved = None
-    def update(self):
+    def update(self) -> bool:
         updated = False
         try:
-            result = self.ctx.execute_path(self.pattern)
+            result: JsonValue = self.ctx.execute_path(self.pattern)
         except Exception:
             result = None
-        if result and len(result) == 1:
+        if isinstance(result, list) and len(result) == 1:
             result = result[0]
         if not shallow_eq(result, self.resolved):
             updated = True
             self.resolved = result
         return updated
-    def check(self):
+    def check(self) -> None:
         try:
             self.ctx.execute_path(self.pattern)
         except Exception:
             raise ParseError(f'Unable to execute path expression: {self.pattern}, in {self.cur_file}')
 
 class ParseContext:
-    def __init__(self, root_path, init_obj):
-        self.files = {}
-        self.unresolved = []
+    def __init__(self, root_path: str, init_obj: JsonValue):
+        self.files: t.Dict[str, AbstractValue] = {}
+        self.unresolved: t.List[AbstractNode] = []
         self.root_path = root_path
-        self.cur_file = None
+        self.cur_file: t.Optional[str] = None
         self.cur_pos = '$'
-        self.abstract_obj = self.make_abstract(init_obj, self.root_path)
-        self.concrete_obj = None
-        self.last_updated = None
+        self.abstract_obj: AbstractValue = self.make_abstract(init_obj, self.root_path)
+        self.concrete_obj: JsonValue = None
+        self.last_updated: t.Optional[AbstractNode] = None
 
-    def make_abstract(self, obj, cur_path):
+    def make_abstract(self, obj: JsonValue, cur_path: str) -> AbstractValue:
         if os.path.isfile(cur_path):
             self.cur_file = cur_path
         else:
             self.cur_file = '<unknown>'
         if isinstance(obj, dict):
-            mixins = set()
+            mixins: t.Set[AbstractNode] = set()
             new_obj = {}
             old_pos = self.cur_pos
             for k in obj:
@@ -222,7 +234,7 @@ class ParseContext:
         else:
             return obj
 
-    def make_concrete(self, abs, con):
+    def make_concrete(self, abs: AbstractValue, con: JsonValue) -> t.Tuple[JsonValue, bool]:
         updated = False
         if isinstance(abs, AbstractNode):
             updated = con is not abs.resolved
@@ -254,10 +266,10 @@ class ParseContext:
             con = abs
         return con, updated
 
-    def execute_path(self, expr):
+    def execute_path(self, expr: str) -> t.List[JsonValue]:
         return [m.current_value for m in jsonpath.parse_str(expr).match(self.concrete_obj)]
 
-    def update_one(self):
+    def update_one(self) -> bool:
         updated = False
         for unres in self.unresolved:
             if unres.update():
@@ -265,7 +277,7 @@ class ParseContext:
                 updated = True
         return updated
 
-    def update(self):
+    def update(self) -> None:
         i = 0
         while i < len(self.unresolved) * 2 + 1:
             i += 1
@@ -275,24 +287,26 @@ class ParseContext:
                 break
         circular = self.update_one()
         if circular:
+            # assert self.last_updated is not None
             raise ParseError(f'Circular references: at {self.last_updated.cur_pos}, in {self.last_updated.cur_file}')
 
-    def check(self):
+    def check(self) -> None:
         for unres in self.unresolved:
             unres.check()
 
-    def parse(self):
+    def parse(self) -> JsonValue:
         self.update()
         self.check()
         result = self.expand_str(self.concrete_obj, {})
         return result
 
-    def expand_str(self, doc, expanded):
+    def expand_str(self, doc: JsonValue, expanded: t.Dict[int, JsonValue]) -> JsonValue:
         if id(doc) in expanded:
             return expanded[id(doc)]
         if isinstance(doc, dict):
-            result = {}
+            result: JsonValue = {}
             expanded[id(doc)] = result
+            # assert isinstance(result, dict)
             for k in doc:
                 result[k] = self.expand_str(doc[k], expanded)
         elif isinstance(doc, list):
@@ -306,13 +320,14 @@ class ParseContext:
             result = doc
         return result
 
-    def translate_str(self, s, circular):
+    def translate_str(self, s: str, circular: t.Set[int]) -> str:
         if id(s) in circular:
             raise ParseError('Circular string expansion: ' + s)
         circular.add(id(s))
         translated = []
         proc_mode = False
-        expr = None
+        expr: t.Optional[t.List[str]] = None
+        expr_str = ''
         stacked_right_brace = False
         for c in s:
             if c != '}':
@@ -320,12 +335,13 @@ class ParseContext:
             if proc_mode and c == '}':
                 proc_mode = False
                 stacked_right_brace = False
-                expr = ''.join(expr)
+                # assert expr is not None
+                expr_str = ''.join(expr)
                 try:
-                    targets = self.execute_path(expr)
+                    targets = self.execute_path(expr_str)
                 except Exception:
-                    raise ParseError(f'Unable to execute Path expression: {expr}, in {s}')
-                expr = None
+                    raise ParseError(f'Unable to execute Path expression: {expr_str}, in {s}')
+                expr = []
                 if len(targets) > 1:
                     raise ParseError('Ambiguous string expansion: ' + s)
                 elif len(targets) == 1:
@@ -339,7 +355,7 @@ class ParseContext:
                         translated.append(json.dumps(target))
             elif proc_mode and c == '{' and not expr:
                 proc_mode = False
-                expr = None
+                expr = []
                 translated.append(c)
             elif not proc_mode and c == '{':
                 proc_mode = True
@@ -352,6 +368,7 @@ class ParseContext:
                     stacked_right_brace = True
             else:
                 if proc_mode:
+                    # assert expr is not None
                     expr.append(c)
                 else:
                     translated.append(c)

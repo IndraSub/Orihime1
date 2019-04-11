@@ -152,7 +152,6 @@ class AbstractInclude(AbstractNode):
         updated = False
         if self.abstract is None:
             self.abstract = self.ctx.files[self.path]
-            updated = True
         old_resolved = self.resolved
         self.resolved, u = self.ctx.make_concrete(self.abstract, self.resolved)
         updated = updated or u

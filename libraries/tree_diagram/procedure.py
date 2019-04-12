@@ -7,14 +7,15 @@ import shutil
 import io
 import logging
 import json
+import yaml
+import requests
 
 from . import info
 from .kit import writeEventName, assertFileWithExit, choices, padUnicode, ExitException
 from .process_utils import invokePipeline
 from .asscheck import checkAssFonts
 from .audio_utils import extractAudio, trimAudio, encodeAudio, mergeAndTrimAudio
-
-import yaml
+from .config_loader import ParseContext
 
 logger = logging.getLogger('tree_diagram')
 
@@ -24,6 +25,10 @@ temporary = os.path.join(working_directory, 'temporary')
 info.working_directory = working_directory
 info.temporary = temporary
 info.autorun = False
+info.report_endpoint = None
+
+current_working = None
+content = None
 
 missions = None
 
@@ -38,8 +43,30 @@ def load_missions():
         missions = yaml.load(f)
         if missions is None:
             missions = {}
+        if 'report' in missions:
+            info.report_endpoint = missions['report']
 
     info.autorun = missions.get('autorun', False)
+
+def parseContentV1(content: dict) -> dict:
+    with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
+        descriptions = yaml.load_all(f)
+        content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
+
+    # replacements
+    content['title'] = content['title'].format(**content)
+    content['source']['filename'] = content['source']['filename'].format(**content)
+    content['output']['filename'] = content['output']['filename'].format(**content)
+    if 'subtitle' in content['source'] and content['source']['subtitle']:
+        if 'filename' in content['source']['subtitle'] and content['source']['subtitle']['filename']:
+            content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
+
+    return content
+
+def parseContentV2() -> dict:
+    return ParseContext(working_directory, {
+        '$include': os.path.relpath(current_working, working_directory)
+    }).parse()
 
 def loadCurrentWorking(idx: int) -> None:
     global current_working
@@ -52,17 +79,13 @@ def loadCurrentWorking(idx: int) -> None:
     with open(current_working, encoding='utf8') as f:
         content = yaml.load(f)
 
-    with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
-        descriptions = yaml.load_all(f)
-        content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
-
-    # replacements
-    content['title'] = content['title'].format(**content)
-    content['source']['filename'] = content['source']['filename'].format(**content)
-    content['output']['filename'] = content['output']['filename'].format(**content)
-    if 'subtitle' in content['source'] and content['source']['subtitle']:
-        if 'filename' in content['source']['subtitle'] and content['source']['subtitle']['filename']:
-            content['source']['subtitle']['filename'] = content['source']['subtitle']['filename'].format(**content)
+    if '$version' not in content or content['$version'] == 1:
+        content = parseContentV1(content)
+    elif content['$version'] == 2:
+        content = parseContentV2()
+    else:
+        logger.critical(f'Unsupported config version: {content["$version"]}')
+        raise ExitException(-1)
 
     info.current_working = current_working
     info.content = content
@@ -92,6 +115,10 @@ def missionReport() -> None:
         answer = choices(message, options, answer)
     if answer == 1:
         raise ExitException()
+
+    if info.report_endpoint is not None:
+        report = f'[{info.node}] Mission Start: {content["title"]}'
+        requests.post(info.report_endpoint, report)
 
 def precheckOutput() -> None:
     writeEventName('Check output file')
@@ -253,6 +280,29 @@ def missionComplete():
     output = os.path.join(working_directory, content['output']['filename'])
     writeEventName('Mission Complete')
     invokePipeline([[info.MEDIAINFO, output]])
+    if info.report_endpoint is not None:
+        report = f'[{info.node}] Mission Complete: {content["title"]}'
+        requests.post(info.report_endpoint, report)
+
+def syncContent():
+    global content
+    if hasattr(info, 'content'):
+        content = info.content
+
+def runMission():
+    missionReport()
+    try:
+        processVideo()
+        processAudio()
+        mkvMerge()
+        mkvMetainfo()
+        cleanTemporaryFiles(force=True)
+    except Exception as e:
+        if info.report_endpoint is not None:
+            report = f'[{info.node}] Mission Failed With Exception: {e}'
+            requests.post(info.report_endpoint, report)
+        raise
+    missionComplete()
 
 def main() -> None:
     load_missions()
@@ -263,10 +313,4 @@ def main() -> None:
     precleanTemporaryFiles()
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)
-        missionReport()
-        processVideo()
-        processAudio()
-        mkvMerge()
-        mkvMetainfo()
-        cleanTemporaryFiles(force=True)
-        missionComplete()
+        runMission()

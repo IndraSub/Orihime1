@@ -1,0 +1,89 @@
+{
+    "downloads": [],
+    "prescript": [
+      "echo Test task",
+      "uname"
+    ],
+    "content": {
+      "project": {
+        "quality": "test",
+        "performance": {
+          "vs_threads": 40,
+          "vs_max_cache_size": 114688
+        },
+        "flow": [
+          {
+            "LWLibavSource": {
+              "range": "limited"
+            }
+          },
+          {
+            "TIVTC": {
+              "field_order": 1,
+              "matching_mode": 5,
+              "post_process_mode": 5,
+              "process_speed": 2
+            }
+          },
+          "TrimFrames",
+          {
+            "Format": "Depth_16_Limited"
+          },
+          {
+            "Format": "Resample_YUV444P16_Limited"
+          },
+          "InfoText",
+          {
+            "Resolution": [
+              1920,
+              1080
+            ]
+          },
+          {
+            "Format": "Resample_YUV420P16_Limited"
+          },
+          "VSFilterMod",
+          {
+            "Format": "Depth_12_Limited"
+          }
+        ],
+        "encoder": "x265",
+        "encoder_params": "--preset=faster\n--crf=21.50\n--input-depth 12\n--output-depth 8\n--range limited\n--colorprim bt709\n--transfer bt709\n--colormatrix bt709\n"
+      },
+      "episode": "EP003",
+      "language": "stamp_test",
+      "quality": "test",
+      "title": "[INDRA] Watashi ni Tenshi ga Maiorita! EP003 test stamp_test",
+      "source": {
+        "filename": "Tenshi/source/EP003.ts",
+        "trim_frames": [
+          [
+            104,
+            4395
+          ],
+          [
+            5835,
+            15401
+          ],
+          [
+            16840,
+            19000
+          ]
+        ],
+        "subtitle": {
+          "filename": "Subtitles/Tenshi/EP003_stamp_test.ass",
+          "texts": [
+            "INDRA_Tenshi_{episode}_{language}_{quality} [{framenum}] [{date} GMT]",
+            "This video is released for image processing tests only, we are not responsible for any copyrighted materials displayed in it. Please distribute it within the limits of the laws and regulations of your country."
+          ]
+        }
+      },
+      "output": {
+        "filename": "Tenshi/release/EP003_test_stamp_test_hevc_yuv420p8.mkv"
+      }
+    },
+    "postscript": [
+      "echo Done"
+    ]
+  }
+  

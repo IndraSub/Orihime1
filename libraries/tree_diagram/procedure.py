@@ -208,7 +208,7 @@ def processVideo() -> None:
         print(f"Encoder {encoder} is not supported.")
         raise ExitException(-1)
     invokePipeline([
-        [info.VSPIPE] + vapoursynth_pipeline,
+        [info.VSPIPE] + vapoursynth_pipeline, True,
         [encoder_binary] + encoder_params
     ])
     assertFileWithExit(output)

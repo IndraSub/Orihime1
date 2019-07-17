@@ -124,7 +124,7 @@ def missionReport() -> None:
 
     if info.report_endpoint is not None:
         report = f'[{info.node}] Mission Start: {content["title"]}'
-        requests.post(info.report_endpoint, report)
+        requests.post(info.report_endpoint, report.encode('utf-8'))
 
 def precheckOutput() -> None:
     writeEventName('Check output file')

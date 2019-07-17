@@ -40,7 +40,7 @@ def load_missions():
         raise ExitException(-1)
 
     with open(missions_path, encoding='utf8') as f:
-        missions = yaml.load(f)
+        missions = yaml.load(f, Loader=yaml.FullLoader)
         if missions is None:
             missions = {}
         if 'report' in missions:
@@ -50,12 +50,18 @@ def load_missions():
 
 def parseContentV1(content: dict) -> dict:
     with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
-        descriptions = yaml.load_all(f)
+        descriptions = yaml.load_all(f, Loader=yaml.FullLoader)
         content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
 
     # replacements
     content['title'] = content['title'].format(**content)
-    content['source']['filename'] = content['source']['filename'].format(**content)
+    if 'split' not in content['source']:
+        content['source']['split'] = False
+    if content['source']['split']:
+        content['source']['audio'] = content['source']['audio'].format(**content)
+        content['source']['filename'] = content['source']['video'].format(**content)
+    else:
+        content['source']['filename'] = content['source']['filename'].format(**content)
     content['output']['filename'] = content['output']['filename'].format(**content)
     if 'subtitle' in content['source'] and content['source']['subtitle']:
         if 'filename' in content['source']['subtitle'] and content['source']['subtitle']['filename']:
@@ -77,7 +83,7 @@ def loadCurrentWorking(idx: int) -> None:
         raise ExitException(-1)
 
     with open(current_working, encoding='utf8') as f:
-        content = yaml.load(f)
+        content = yaml.load(f, Loader=yaml.FullLoader)
 
     if '$version' not in content or content['$version'] == 1:
         content = parseContentV1(content)
@@ -204,6 +210,10 @@ def processVideo() -> None:
         encoder_params = ['-', '--demuxer', 'y4m'] + encoder_params + ['--output', output]
     elif encoder.lower().startswith('x265'):
         encoder_params = ['--y4m'] + encoder_params + ['--output', output, '-']
+    elif encoder.lower().startswith('rav1e'):
+        encoder_params = ['-'] + encoder_params + ['--output', os.path.join(temporary, 'video-encoded.ivf')]
+    elif encoder.lower().startswith('svtav1'):
+        encoder_params = ['-i', 'stdin'] + encoder_params + ['-b', os.path.join(temporary, 'video-encoded.ivf')]
     else:
         print(f"Encoder {encoder} is not supported.")
         raise ExitException(-1)
@@ -214,35 +224,53 @@ def processVideo() -> None:
     assertFileWithExit(output)
 
 def processAudio() -> None:
-    source = os.path.join(working_directory, content['source']['filename'])
-    extractedAudio = os.path.join(temporary, 'audio-extracted.wav')
-    trimmedAudio = os.path.join(temporary, 'audio-trimmed.wav')
-    encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
-    clipInfo = os.path.join(temporary, 'clipinfo.json')
+    if (content['source']['split']): # splitted audio & video source
+        source = os.path.join(working_directory, content['source']['audio'])
+        extractedAudio = os.path.join(temporary, 'audio-extracted.wav')
+        encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
+        clipInfo = os.path.join(temporary, 'clipinfo.json')
 
-    trim_frames = None
-    if any(f == 'TrimFrames' or (type(f) is dict and list(f.keys())[0] == 'TrimFrames')
-           for f in content['project']['flow']): # has TrimFrames
-        trim_frames = content['source']['trim_frames']
-    writeEventName('Process audio & Encode')
-
-    if any(f == 'MultiSource' or (type(f) is dict and list(f.keys())[0] == 'MultiSource')
-           for f in content['project']['flow']): # has MultiSource
-        idx = 0
-        for filename in content['source']['filenames']:
-            source = os.path.join(working_directory, filename)
-            print(f'TreeDiagram [Multi Source] Preparing {filename}...')
-            extractAudio(source, os.path.join(temporary, f'{idx}.aif'))
-            idx += 1
-        mergeAndTrimAudio(idx, trimmedAudio, trim_frames)
-    else: # single source
+        trim_frames = None
+        if any(f == 'TrimFrames' or (type(f) is dict and list(f.keys())[0] == 'TrimFrames')
+               for f in content['project']['flow']):  # has TrimFrames
+            trim_frames = content['source']['trim_frames']
+        writeEventName('Process audio & Encode')
         extractAudio(source, extractedAudio)
         clipInfoFile = open(clipInfo)
         clipInfo = json.loads(clipInfoFile.read())
-        trimAudio(source, extractedAudio, trimmedAudio, clipInfo['fps'], trim_frames)
+        encodeAudio(extractedAudio, encodedAudio)
+        assertFileWithExit(encodedAudio)
 
-    encodeAudio(trimmedAudio, encodedAudio)
-    assertFileWithExit(encodedAudio)
+    else: # audio from video source file
+        source = os.path.join(working_directory, content['source']['filename'])
+        extractedAudio = os.path.join(temporary, 'audio-extracted.wav')
+        trimmedAudio = os.path.join(temporary, 'audio-trimmed.wav')
+        encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
+        clipInfo = os.path.join(temporary, 'clipinfo.json')
+
+        trim_frames = None
+        if any(f == 'TrimFrames' or (type(f) is dict and list(f.keys())[0] == 'TrimFrames')
+               for f in content['project']['flow']): # has TrimFrames
+            trim_frames = content['source']['trim_frames']
+        writeEventName('Process audio & Encode')
+
+        if any(f == 'MultiSource' or (type(f) is dict and list(f.keys())[0] == 'MultiSource')
+               for f in content['project']['flow']): # has MultiSource
+            idx = 0
+            for filename in content['source']['filenames']:
+                source = os.path.join(working_directory, filename)
+                print(f'TreeDiagram [Multi Source] Preparing {filename}...')
+                extractAudio(source, os.path.join(temporary, f'{idx}.aif'))
+                idx += 1
+            mergeAndTrimAudio(idx, trimmedAudio, trim_frames)
+        else: # single source
+            extractAudio(source, extractedAudio)
+            clipInfoFile = open(clipInfo)
+            clipInfo = json.loads(clipInfoFile.read())
+            trimAudio(source, extractedAudio, trimmedAudio, clipInfo['fps'], trim_frames)
+
+        encodeAudio(trimmedAudio, encodedAudio)
+        assertFileWithExit(encodedAudio)
 
 def mkvMerge() -> None:
     output = os.path.join(working_directory, content['output']['filename'])

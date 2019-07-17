@@ -66,8 +66,8 @@ def checkSystem() -> None:
     logger.info(f'ENCODING: {default_encoding}')
 
     passed = True
-    if sys.version_info < (3, 6) or sys.version_info >= (3, 7):
-        logger.error('Python version should be 3.6')
+    if sys.version_info < (3, 6) or sys.version_info > (3, 7):
+        logger.error('Python version should be 3.6 or 3.7')
         passed = False
     if plat_info.system not in ['Windows', 'Linux']:
         logger.error('Unsupported operating system')

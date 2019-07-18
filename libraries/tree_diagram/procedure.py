@@ -310,7 +310,7 @@ def missionComplete():
     invokePipeline([[info.MEDIAINFO, output]])
     if info.report_endpoint is not None:
         report = f'[{info.node}] Mission Complete: {content["title"]}'
-        requests.post(info.report_endpoint, report)
+        requests.post(info.report_endpoint, report.encode('utf-8'))
 
 def syncContent():
     global content
@@ -328,7 +328,7 @@ def runMission():
     except Exception as e:
         if info.report_endpoint is not None:
             report = f'[{info.node}] Mission Failed With Exception: {e}'
-            requests.post(info.report_endpoint, report)
+            requests.post(info.report_endpoint, report.encode('utf-8'))
         raise
     missionComplete()
 

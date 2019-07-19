@@ -6,6 +6,7 @@ import sys
 import shutil
 import io
 import logging
+import time
 import json
 import yaml
 import requests
@@ -342,3 +343,30 @@ def main() -> None:
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)
         runMission()
+
+def genVseditFile() -> None:
+    writeEventName('Generate VSEdit Script')
+    outputScript = os.path.join(temporary, f'vsedit_{content["title"]}_{content["quality"]}_{int(time.time())}.vpy')
+    tdinfo = dict(info)
+    tdinfo['binaries'] = None # avoid envvar growing too large
+    tdinfoJson = json.dumps(tdinfo)
+    with open(outputScript, 'w') as f:
+        f.write(f'''\
+import os
+import sys
+sys.path = {repr(sys.path)}
+os.environ['TDINFO'] = {repr(tdinfoJson)}
+os.environ['PATH'] = {repr(os.environ['PATH'])}
+''')
+        if sys.platform == 'linux':
+            f.write(f'''os.environ['LD_LIBRARY_PATH'] = {repr(os.environ['LD_LIBRARY_PATH'])}\n''')
+        f.write(f'''from misaka64 import main\n''')
+        f.write(f'''main()\n''')
+    assertFileWithExit(outputScript)
+    print(f'Generated script file: {outputScript}')
+
+def genVsedit() -> None:
+    load_missions()
+    for idx in range(len(missions['missions'])):
+        loadCurrentWorking(idx)
+        genVseditFile()

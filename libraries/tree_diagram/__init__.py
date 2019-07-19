@@ -5,5 +5,5 @@ from .precheck import precheck, info
 precheck()
 from .procedure import main, loadCurrentWorking, missionReport, precheckOutput, precheckSubtitle, \
     precleanTemporaryFiles, processVideo, processAudio, mkvMerge, mkvMetainfo, cleanTemporaryFiles, \
-    missionComplete, runMission, syncContent
+    missionComplete, runMission, syncContent, genVseditFile, genVsedit
 from .kit import ExitException

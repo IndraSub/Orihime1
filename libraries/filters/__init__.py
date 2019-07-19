@@ -8,7 +8,7 @@ from .delogo import Delogo
 from .denoise import SMDegrain, SMDegrainFast, BM3D, Waifu2xCaffe, Waifu2xW2XC, NLMeans, VagueDenoiser
 from .dering import Dering
 from .edge_refine import EdgeRefine
-from .framerate import FrameRate
+from .framerate import FrameRate, VFRToCFR
 from .line_clearness import LineClearness
 from .line_sharp import LineSharp
 from .format import Format

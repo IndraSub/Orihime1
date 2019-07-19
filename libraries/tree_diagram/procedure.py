@@ -194,7 +194,7 @@ def precheckSubtitle() -> None:
         raise ExitException()
 
 def exportTimecode() -> None:
-    if any(f == 'VFRToCFR' or (type(f) is dict and list(f.keys())[0] == 'VFRToCFR')
+    if not any(f == 'VFRToCFR' or (type(f) is dict and list(f.keys())[0] == 'VFRToCFR')
            for f in content['project']['flow']):
         return
     writeEventName('Export Timecodes')
@@ -347,12 +347,12 @@ def runMission():
 
 def main() -> None:
     load_missions()
+    precleanTemporaryFiles()
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)
         precheckOutput()
         precheckSubtitle()
         exportTimecode()
-    precleanTemporaryFiles()
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)
         runMission()

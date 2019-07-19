@@ -6,6 +6,7 @@ import sys
 import shutil
 import io
 import logging
+import time
 import json
 import yaml
 import requests
@@ -41,7 +42,7 @@ def load_missions():
         raise ExitException(-1)
 
     with open(missions_path, encoding='utf8') as f:
-        missions = yaml.load(f, Loader=yaml.FullLoader)
+        missions = yaml.safe_load(f)
         if missions is None:
             missions = {}
         if 'report' in missions:
@@ -51,7 +52,7 @@ def load_missions():
 
 def parseContentV1(content: dict) -> dict:
     with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
-        descriptions = yaml.load_all(f, Loader=yaml.FullLoader)
+        descriptions = yaml.safe_load_all(f)
         content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
 
     # replacements
@@ -84,7 +85,7 @@ def loadCurrentWorking(idx: int) -> None:
         raise ExitException(-1)
 
     with open(current_working, encoding='utf8') as f:
-        content = yaml.load(f, Loader=yaml.FullLoader)
+        content = yaml.safe_load(f)
 
     if '$version' not in content or content['$version'] == 1:
         content = parseContentV1(content)
@@ -355,3 +356,30 @@ def main() -> None:
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)
         runMission()
+
+def genVseditFile() -> None:
+    writeEventName('Generate VSEdit Script')
+    outputScript = os.path.join(temporary, f'vsedit_{content["title"]}_{content["quality"]}_{int(time.time())}.vpy')
+    tdinfo = dict(info)
+    tdinfo['binaries'] = None # avoid envvar growing too large
+    tdinfoJson = json.dumps(tdinfo)
+    with open(outputScript, 'w') as f:
+        f.write(f'''\
+import os
+import sys
+sys.path = {repr(sys.path)}
+os.environ['TDINFO'] = {repr(tdinfoJson)}
+os.environ['PATH'] = {repr(os.environ['PATH'])}
+''')
+        if sys.platform == 'linux':
+            f.write(f'''os.environ['LD_LIBRARY_PATH'] = {repr(os.environ['LD_LIBRARY_PATH'])}\n''')
+        f.write(f'''from misaka64 import main\n''')
+        f.write(f'''main()\n''')
+    assertFileWithExit(outputScript)
+    print(f'Generated script file: {outputScript}')
+
+def genVsedit() -> None:
+    load_missions()
+    for idx in range(len(missions['missions'])):
+        loadCurrentWorking(idx)
+        genVseditFile()

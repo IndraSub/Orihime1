@@ -1,8 +1,10 @@
 import os
 import sys
+import json
 import inspect
 
 _saved_clips = {}
+_info = None
 
 class ConfigureError(Exception):
     pass
@@ -37,3 +39,9 @@ def load_clip(name):
     if name not in _saved_clips:
         return None
     return _saved_clips[name]
+
+def load_info():
+    global _info
+    if _info is None:
+        _info = json.loads(os.environ['TDINFO'])
+    return _info

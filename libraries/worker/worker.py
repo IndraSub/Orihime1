@@ -41,7 +41,7 @@ class Worker:
 
     def load_config(self, filepath):
         with open(filepath) as f:
-            config = yaml.load(f)
+            config = yaml.safe_load(f)
         if self.config is None:
             config = {}
         self.config = {**self.config, **config}

@@ -9,9 +9,6 @@ import vapoursynth
 
 from filters.utils import ConfigureError
 
-def load_working_content():
-    return json.loads(os.environ['TDINFO'])
-
 def make_tasks(configure):
     import filters
 
@@ -36,9 +33,10 @@ def make_tasks(configure):
     return tasks
 
 def main():
+    from filters.utils import load_info
     from filters.plugins import load_plugins
-    
-    environment = load_working_content()
+
+    environment = load_info()
     configure = environment['content']
     performance = configure['project']['performance']
 

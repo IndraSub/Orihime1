@@ -22,7 +22,7 @@ import vapoursynth
 
 from filters.utils import ConfigureError
 
-configure = yaml.load('''
+configure = yaml.safe_load('''
 project:
   performance:
     vs_threads: 4
@@ -34,7 +34,7 @@ source:
   # other source confs here
 ''')
 
-os.environ['TDINFO'] = json.dumps(yaml.load('''
+os.environ['TDINFO'] = json.dumps(yaml.safe_load('''
 vsfilters:
   # path to your vs filters here
 avsfilters:

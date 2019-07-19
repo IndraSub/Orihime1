@@ -40,7 +40,7 @@ def load_missions():
         raise ExitException(-1)
 
     with open(missions_path, encoding='utf8') as f:
-        missions = yaml.load(f, Loader=yaml.FullLoader)
+        missions = yaml.safe_load(f)
         if missions is None:
             missions = {}
         if 'report' in missions:
@@ -50,7 +50,7 @@ def load_missions():
 
 def parseContentV1(content: dict) -> dict:
     with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
-        descriptions = yaml.load_all(f, Loader=yaml.FullLoader)
+        descriptions = yaml.safe_load_all(f)
         content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
 
     # replacements
@@ -83,7 +83,7 @@ def loadCurrentWorking(idx: int) -> None:
         raise ExitException(-1)
 
     with open(current_working, encoding='utf8') as f:
-        content = yaml.load(f, Loader=yaml.FullLoader)
+        content = yaml.safe_load(f)
 
     if '$version' not in content or content['$version'] == 1:
         content = parseContentV1(content)

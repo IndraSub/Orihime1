@@ -14,6 +14,7 @@ from . import info
 from .kit import writeEventName, assertFileWithExit, choices, padUnicode, ExitException
 from .process_utils import invokePipeline
 from .asscheck import checkAssFonts
+from .video_utils import exportTimecodeMP4
 from .audio_utils import extractAudio, trimAudio, encodeAudio, mergeAndTrimAudio
 from .config_loader import ParseContext
 
@@ -191,6 +192,17 @@ def precheckSubtitle() -> None:
     if answer == 1:
         raise ExitException()
 
+def exportTimecode() -> None:
+    if any(f == 'VFRToCFR' or (type(f) is dict and list(f.keys())[0] == 'VFRToCFR')
+           for f in content['project']['flow']):
+        return
+    writeEventName('Export Timecodes')
+    source = os.path.join(working_directory, content['source']['filename'])
+    if not source.endswith('.mp4'):
+        logger.critical(f'Exporting timecodes currently only supports MP4 source file.')
+        raise ExitException(-1)
+    exportTimecodeMP4(source=source, exportedTimecode=os.path.join(temporary, 'timecode.txt'))
+
 def processVideo() -> None:
     output = os.path.join(temporary, 'video-encoded.mp4')
     writeEventName('Process video & Encode')
@@ -338,6 +350,7 @@ def main() -> None:
         loadCurrentWorking(idx)
         precheckOutput()
         precheckSubtitle()
+        exportTimecode()
     precleanTemporaryFiles()
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)

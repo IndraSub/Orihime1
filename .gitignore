@@ -1,3 +1,4 @@
+venv
 bin/**
 episodes
 **/__pycache__
@@ -5,3 +6,5 @@ cudnn_data/
 bin_cache.json
 libraries/vsedit.py
 worker_config.yaml
+.idea
+.vscode

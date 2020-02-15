@@ -70,13 +70,13 @@ def checkSystem() -> None:
         logger.error('Python version should be 3.6 or 3.7')
         passed = False
     if plat_info.system not in ['Windows', 'Linux']:
-        logger.error('Unsupported operating system')
+        logger.error('Unsupported operating system, supported: Windows, Linux')
         passed = False
     if plat_info.machine not in ['i386', 'x86_64', 'AMD64']:
-        logger.error('Unsupported processor')
+        logger.error('Unsupported platform, supported: i386, x86_64, amd64')
         passed = False
     if default_encoding != 'utf-8':
-        logger.error('Encoding other than utf-8 is not supported')
+        logger.error('Unsupported encoding, supported: utf-8')
         passed = False
     if not passed:
         exit(-1)
@@ -96,7 +96,7 @@ def assertModulesInstalled(modules: List[Tuple[str, str]]) -> None:
         if importlib.util.find_spec(module[0]) is None:
             not_found.append(module[1])
     if len(not_found) > 0:
-        logger.critical(f'Modules not found: {", ".join(not_found)}')
+        logger.critical(f'Modules not found: {", ".join(not_found)}, install missing modules first')
         exit(-1)
 
 def findExecutable(filename: str, shorthand=None) -> str:
@@ -416,16 +416,20 @@ def loadBinCache():
         with open(cachepath, 'r') as f:
             cache = json.loads(f.read())
     else:
-        print('*** Cache file not found. Analyzing binary files on site. It may take a while... ***')
+        print('*** Binary cache file not found. Analyzing binary files on site. It may take a while... ***')
     info.binaries = cache.get('binaries', {})
-    for filepath in info.binaries.keys():
-        if not os.path.isfile(filepath):
-            del info.binaries[filepath]
-            continue
-        fileinfo = info.binaries[filepath]
-        if os.path.getmtime(filepath) != fileinfo.get('mtime'):
-            del info.binaries[filepath]
-            continue
+    try:
+        for filepath in info.binaries.keys():
+            if not os.path.isfile(filepath):
+                del info.binaries[filepath]
+                continue
+            fileinfo = info.binaries[filepath]
+            if os.path.getmtime(filepath) != fileinfo.get('mtime'):
+                del info.binaries[filepath]
+                continue
+    except RuntimeError:
+        logger.error(f'*** Outdated binary cache file, please delete bin_cache.json manually. ***')
+        exit(-1)
 
 def saveBinCache():
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')
@@ -487,10 +491,9 @@ def precheck() -> None:
             ('mkvmerge.exe', True),
             ('mkvpropedit.exe', True),
             ('mp4fpsmod.exe', True),
-            ('x264_64-8bit.exe', False, 'x264'),
-            ('x264_64-10bit.exe', False, 'x264_10bit'),
-            ('x264_7mod_64-8bit.exe', False, 'x264_7mod'),
-            ('x264_7mod_64-10bit.exe', False, 'x264_7mod_10bit'),
+            ('x264.exe', False, 'x264'),
+            ('x264_7mod-8bit.exe', False, 'x264_7mod'),
+            ('x264_7mod-10bit.exe', False, 'x264_7mod_10bit'),
             ('x265.exe', False, 'x265'),
             ('x265-yuuki-8bit.exe', False, 'x265_yuuki'),
             ('x265-yuuki-10bit.exe', False, 'x265_yuuki_10bit'),

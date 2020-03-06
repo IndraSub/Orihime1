@@ -8,7 +8,7 @@ from .utils import ConfigureError, SimpleFilter
 
 
 @SimpleFilter
-def Waifu2xExpand(core, clip, _, scale, noise, block, model, cudnn, processor, tta, batch, multi_threads):
+def Waifu2xExpand(core, clip, _, scale, noise, block_w, block_h, model, cudnn, processor, tta, batch, multi_threads):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=False, bits=32)
     rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="limited", filter_param_a=0, filter_param_b=0.5)
@@ -17,8 +17,8 @@ def Waifu2xExpand(core, clip, _, scale, noise, block, model, cudnn, processor, t
             rgbs,
             noise=noise,
             scale=scale,
-            block_w=block,
-            block_h=block,
+            block_w=block_w,
+            block_h=block_h,
             model=model,
             cudnn=cudnn,
             processor=processor,

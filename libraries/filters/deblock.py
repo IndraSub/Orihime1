@@ -4,8 +4,9 @@ from vapoursynth_tools import Oyster
 from .utils import ConfigureError
 
 class FastDeblock:
-    def __init__(self, _, radius, h=3.2, lowpass="0.0:0.0 0.48:1024.0 1.0:1024.0"):
-        self.radius = int(radius)
+    def __init__(self, _, radius_temporal, radius_spatial, h=3.2, lowpass="0.0:0.0 0.48:1024.0 1.0:1024.0"):
+        self.radius_temporal = int(radius_temporal)
+        self.radius_spatial = int(radius_spatial)
         self.h = float(h)
         self.lowpass = lowpass
 
@@ -22,9 +23,9 @@ class FastDeblock:
         clip          = ShufflePlanes(clip, 0, vs.GRAY)
         colorspace    = clip.format.color_family
         src           = clip
-        ref           = Oyster.Basic(clip, None, self.radius)
+        ref           = Oyster.Basic(clip, None, self.radius_temporal)
         mask          = self.genblockmask(clip)
-        cleansed      = self.nlmeans(ref, 0, 8, 4, self.h, ref)
+        cleansed      = self.nlmeans(ref, 0, self.radius_spatial, self.radius_spatial / 2, self.h, ref)
         ref           = self.freq_merge(cleansed, ref, 9, self.lowpass)
         src           = self.freq_merge(cleansed, src, 9, self.lowpass)
         clip          = MaskedMerge(src, ref, mask, first_plane=True)
@@ -95,8 +96,9 @@ class FastDeblock:
         return clip
 
 class OysterDeblock:
-    def __init__(self, _, sigma=24.0, h=3.2):
-        self.sigma = int(sigma)
+    def __init__(self, _, radius=6, sigma=16.0, h=6.4):
+        self.radius = int(radius)
+        self.sigma = float(sigma)
         self.h = float(h)
     
     def __call__(self, core, clip):
@@ -106,8 +108,8 @@ class OysterDeblock:
         sup = Oyster.Super(clip)
         ref_f = Oyster.Basic(clip, sup, short_time=False)
         ref_s = Oyster.Basic(clip, sup, short_time=True)
-        clip = Oyster.Destaircase(clip, ref_f, sigma=self.sigma, block_step=2)
-        clip = Oyster.Deringing(clip, ref_s, sigma=self.sigma, h=self.h, block_step=2)
+        clip = Oyster.Destaircase(clip, ref_f, radius=self.radius, sigma=self.sigma, block_step=2)
+        clip = Oyster.Deringing(clip, ref_s, radius=self.radius, sigma=self.sigma, h=self.h, block_step=2)
         clip = core.std.ShufflePlanes([clip, origin, origin], [0, 1, 2], vs.YUV)
         clip = core.fmtc.bitdepth(clip, bits=16, fulls=True, fulld=False)
         return clip

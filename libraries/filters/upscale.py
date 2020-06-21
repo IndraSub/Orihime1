@@ -8,7 +8,7 @@ from .utils import ConfigureError, SimpleFilter
 
 
 @SimpleFilter
-def Waifu2xExpand(core, clip, _, scale, noise, block_w, block_h, model, cudnn, processor, tta, batch, multi_threads):
+def Waifu2xExpand(core, clip, _, scale, noise, block_w, block_h, model, cudnn, processor, tta, batch, multi_threads=False):
     clip = core.fmtc.resample(clip, css="444", csp=vs.YUV444PS)
     clip = core.fmtc.matrix(clip, mat="709", mats="709", matd="709", fulls=False, bits=32)
     rgbs = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in=1, matrix_in_s="709", range_in_s="limited", filter_param_a=0, filter_param_b=0.5)
@@ -38,4 +38,33 @@ def Waifu2xExpand(core, clip, _, scale, noise, block_w, block_h, model, cudnn, p
     yuv = mvf.ToYUV(exp, css="444", full=False)
     yuv = mvf.Depth(yuv, depth=10, fulls=False, fulld=False, dither=3)
     return yuv
+
+
+@SimpleFilter
+def Anime4K(core, clip, _, scale, passes=2, push_color_count=2, push_color_strength=0.3, push_gradient=1, gpu=1, acnet=0, hdn=0, platform=0, device=0, multi_threads=False):
+    def create_filter(clip, platform, device):
+        return core.anime4kcpp.Anime4KCPP(
+            clip,
+            zoomFactor=scale,
+            passes=passes,
+            pushColorCount=push_color_count,
+            strengthColor=push_color_strength,
+            strengthGradient=push_gradient,
+            ACNet=acnet,
+            GPUMode=gpu,
+            HDN=hdn,
+            platformID=platform,
+            deviceID=device)
+    if not multi_threads:
+        exp = create_filter(clip, platform, device)
+    else:
+        threads_per_device = multi_threads['threads_per_device']
+        devices = multi_threads['devices']
+        threads = threads_per_device * devices
+        exp = core.std.Interleave([
+            create_filter(clip.std.SelectEvery(cycle=threads, offsets=i * devices + p), platform, p)
+            for i in range(0, threads_per_device)
+            for p in range(0, devices)
+        ]) if threads > 1 else create_filter(clip, platform, device)
+    return exp
 

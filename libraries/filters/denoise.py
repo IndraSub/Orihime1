@@ -19,7 +19,7 @@ def SMDegrain(core, clip, _):
         blksize=16,
         search=5,
         prefilter=2,
-        contrasharp=20,
+        contrasharp=True,
         RefineMotion=True,
         pel=2,
         truemotion=False,

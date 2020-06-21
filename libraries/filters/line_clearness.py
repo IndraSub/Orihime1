@@ -6,8 +6,9 @@ from vapoursynth_tools import mvsfunc as mvf
 from .utils import ConfigureError
 
 class LineClearness:
-    def __init__(self, _):
-        pass
+    def __init__(self, _, strength=24, thinning=16):
+        self.strength = strength
+        self.thinning = thinning
     def __call__(self, core, clip):
         w = clip.width
         h = clip.height
@@ -27,7 +28,7 @@ class LineClearness:
         topaa3 = topaa3.resize.Spline36(h, w)
         topaa3 = topaa3.std.Transpose()
 
-        dark1 = haf.FastLineDarkenMOD(topaa3, strength=12, threshold=3, thinning=6)
+        dark1 = haf.FastLineDarkenMOD(topaa3, strength=self.strength, luma_cap=207, threshold=3, thinning=self.thinning)
         dark2 = core.std.Convolution(dark1, matrix=[1, 2, 1, 2, 4, 2, 1, 2, 1])
 
         diff_clip = core.rgvs.Repair(core.std.MakeDiff(dark1, dark2), core.std.MakeDiff(clip, dark1), 13)

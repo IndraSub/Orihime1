@@ -66,8 +66,8 @@ def checkSystem() -> None:
     logger.info(f'ENCODING: {default_encoding}')
 
     passed = True
-    if sys.version_info < (3, 6) or sys.version_info > (3, 8):
-        logger.error('Python version should be 3.6 or 3.7')
+    if sys.version_info < (3, 6) or sys.version_info > (3, 9):
+        logger.error('Python version should be 3.6, 3.7 or 3.8')
         passed = False
     if plat_info.system not in ['Windows', 'Linux']:
         logger.error('Unsupported operating system, supported: Windows, Linux')
@@ -492,6 +492,7 @@ def precheck() -> None:
             ('mkvpropedit.exe', True),
             ('mp4fpsmod.exe', True),
             ('x264.exe', False, 'x264'),
+            ('x264_tmod.exe', False, 'x264_tmod'),
             ('x264_7mod-8bit.exe', False, 'x264_7mod'),
             ('x264_7mod-10bit.exe', False, 'x264_7mod_10bit'),
             ('x265.exe', False, 'x265'),

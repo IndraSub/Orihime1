@@ -43,6 +43,11 @@ def Yadifmod(core, clip, _, edeint, order, field=-1, mode=0):
 
 
 @SimpleFilter
+def Bwdif(core, clip, _, field):
+    return core.bwdif.Bwdif(clip, field)
+
+
+@SimpleFilter
 def QTGMC(core, clip, _, field_order, frame_rate_divisor):
     args = dict(
         Preset='Very Slow',

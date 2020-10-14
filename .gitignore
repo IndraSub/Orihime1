@@ -8,3 +8,4 @@ libraries/vsedit.py
 worker_config.yaml
 .idea
 .vscode
+*.dat

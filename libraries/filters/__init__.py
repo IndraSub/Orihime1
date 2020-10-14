@@ -19,6 +19,6 @@ from .resolution import Resolution
 from .source import LWLibavSource, LSMASHVideoSource, FFMS2, AVISource, MultiSource
 from .subtitle import VSFilterMod, Subtext, InfoText
 from .trim_frames import TrimFrames
-from .sharpen import FineSharp
+from .sharpen import FineSharp, CAS
 from .upscale import Waifu2xExpand, Anime4K
 from .store import StoreClip, LoadClip

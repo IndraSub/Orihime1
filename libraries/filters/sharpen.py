@@ -11,3 +11,8 @@ def FineSharp(core, clip, _, strength, final):
         message = 'FineSharp: final XSharpen\'s threshold should small than 0.25 (currently ' + str(final) + ')'
         raise ConfigureError(message)
     return fs.sharpen(clip, sstr=strength, xstr=final)
+
+
+@SimpleFilter
+def CAS(core, clip, _, strength=0.5, planes=[0]):
+    return core.cas.CAS(clip, strength, planes)

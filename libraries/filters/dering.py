@@ -1,20 +1,8 @@
 from vapoursynth_tools import havsfunc as haf
 
+from .utils import SimpleFilter
 
-class Dering:
-    def __init__(self, _, threshold=60):
-        self.threshold = threshold
 
-    def __call__(self, core, clip):
-        return haf.HQDeringmod(
-            clip,
-            mrad=1,
-            msmooth=1,
-            incedge=False,
-            mthr=self.threshold,
-            minp=1,
-            nrmode=2,
-            sharp=1,
-            drrep=24,
-            thr=12,
-            planes=[0], )
+@SimpleFilter
+def HQDeringmod(core, clip, _, threshold=60, inpand=1, edge_expand=1, edge_smooth=1, planes=[0]):
+    return haf.HQDeringmod(clip, mrad=edge_expand, msmooth=edge_smooth, mthr=threshold, minp=inpand, planes=planes)

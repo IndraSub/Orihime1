@@ -1,5 +1,7 @@
 import vapoursynth as vs
+
 from vapoursynth_tools import Oyster
+from vapoursynth_tools import mvsfunc as mvf
 
 from .utils import ConfigureError
 
@@ -18,7 +20,8 @@ class FastDeblock:
         MergeDiff     = core.std.MergeDiff
         MaskedMerge   = core.std.MaskedMerge
         ShufflePlanes = core.std.ShufflePlanes
-        clip          = core.fmtc.bitdepth(clip, bits=32, fulls=False, fulld=True)
+        clip          = core.fmtc.bitdepth(clip, fulls=False, fulld=True)
+        clip          = mvf.Depth(clip, depth=32, fulls=True, fulld=True, dither=3)
         origin        = clip
         clip          = ShufflePlanes(clip, 0, vs.GRAY)
         colorspace    = clip.format.color_family
@@ -30,7 +33,8 @@ class FastDeblock:
         src           = self.freq_merge(cleansed, src, 9, self.lowpass)
         clip          = MaskedMerge(src, ref, mask, first_plane=True)
         clip          = ShufflePlanes([clip, origin, origin], [0, 1, 2], vs.YUV)
-        clip          = core.fmtc.bitdepth(clip, bits=16, fulls=True, fulld=False)
+        clip          = core.fmtc.bitdepth(clip, fulls=True, fulld=False)
+        clip          = mvf.Depth(clip, depth=16, fulls=False, fulld=False, dither=3)
         return clip
 
     def freq_merge(self, low, hi, sbsize, sstring):

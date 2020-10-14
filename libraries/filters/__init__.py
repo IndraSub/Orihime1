@@ -4,10 +4,10 @@ from .crop_after import CropAfter
 from .crop_before import CropBefore
 from .deband import f3kdb
 from .deblock import FastDeblock, OysterDeblock
-from .deinterlace import IT, VIVTC, TIVTC, Yadifmod, QTGMC
+from .deinterlace import IT, VIVTC, TIVTC, Yadifmod, Bwdif, QTGMC
 from .delogo import Delogo
 from .denoise import SMDegrain, SMDegrainFast, BM3D, Waifu2xCaffe, Waifu2xW2XC, NLMeans, VagueDenoiser
-from .dering import Dering
+from .dering import HQDeringmod, LGhost
 from .edge_refine import EdgeRefine
 from .framerate import FrameRate, VFRToCFR
 from .line_clearness import LineClearness

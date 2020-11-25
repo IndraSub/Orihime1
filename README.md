@@ -1,3 +1,7 @@
+# NOTE
+
+**This branch is deprecated, please go to TreeDiagram branch for future development.**
+
 # Orihime1
 
 **Orihime1 is the worker part of Orihime1 Project.**

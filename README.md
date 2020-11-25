@@ -9,7 +9,8 @@ This branch is aimed to create a modern & cross-platform version of Orihime1.
 ### Main Features
 
 - All the cool new features under development and testing
-- Complete Linux support
+- Brand new project configuration format, flexible and easy to read
+- Complete cross-platform (now including Linux and Windows) support
 - No longer needs Avisynth, clean and lightweight
 
 ------
@@ -44,7 +45,7 @@ See [docs/Configuration.md](docs/Configuration.md) for details.
 
 ### License of the source
 
-This project is **closed source** at the moment. Publication of any part of the source code is strictly prohibited. Do NOT distribute copy, snippet or screenshot of the source code to any person who does not have access to this repository.
+This project is **Licensed under the EUPL**. Any use of Orihime1, other than as authorised under this Licence is prohibited (to the extent such use is covered by a right of the copyright holder of Orihime1).
 
 ### License of distributed binary files
 

@@ -496,8 +496,12 @@ def precheck() -> None:
             ('x264_7mod-8bit.exe', False, 'x264_7mod'),
             ('x264_7mod-10bit.exe', False, 'x264_7mod_10bit'),
             ('x265.exe', False, 'x265'),
+            ('x265-asuna-8bit.exe', False, 'x265_asuna'),
+            ('x265-asuna-10bit.exe', False, 'x265_asuna_10bit'),
+            ('x265-asuna-full.exe', False, 'x265_asuna_full'),
             ('x265-yuuki-8bit.exe', False, 'x265_yuuki'),
             ('x265-yuuki-10bit.exe', False, 'x265_yuuki_10bit'),
+            ('x265-yuuki-full.exe', False, 'x265_yuuki_full'),
             ('qaac.exe', True),
         ]
     else:

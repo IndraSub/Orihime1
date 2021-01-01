@@ -41,7 +41,7 @@ def getSourceInfo(source: str) -> int:
     if adelay is None:
         print('TreeDiagram [Audio Utils] No audio delay in stream meta, assume it to 0.')
         adelay = 0
-    if info.content['source']['audio_delay']:
+    if 'audio_delay' in info.content['source']:
         delay = info.content['source']['audio_delay']
     else:
         delay = int((adelay - vdelay) * 1000)

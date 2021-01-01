@@ -6,7 +6,7 @@ from vapoursynth_tools import mvsfunc as mvf
 from .utils import ConfigureError
 
 class FastDeblock:
-    def __init__(self, _, radius_temporal, radius_spatial, h=3.2, lowpass="0.0:0.0 0.48:1024.0 1.0:1024.0"):
+    def __init__(self, _, radius_temporal, radius_spatial, h=3.2, lowpass=[0.0, 0.0, 0.48, 1024.0, 1.0, 1024.0]):
         self.radius_temporal = int(radius_temporal)
         self.radius_spatial = int(radius_spatial)
         self.h = float(h)
@@ -37,13 +37,13 @@ class FastDeblock:
         clip          = mvf.Depth(clip, depth=16, fulls=False, fulld=False, dither=3)
         return clip
 
-    def freq_merge(self, low, hi, sbsize, sstring):
+    def freq_merge(self, low, hi, sbsize, slocation):
         core            = vs.get_core()
         DFTTest         = core.dfttest.DFTTest
         MakeDiff        = core.std.MakeDiff
         MergeDiff       = core.std.MergeDiff
-        hif             = MakeDiff(hi, DFTTest(hi, sbsize=sbsize, sstring=sstring, smode=0, sosize=0, tbsize=1, tosize=0, tmode=0))
-        clip            = MergeDiff(DFTTest(low, sbsize=sbsize, sstring=sstring, smode=0, sosize=0, tbsize=1, tosize=0, tmode=0), hif)
+        hif             = MakeDiff(hi, DFTTest(hi, sbsize=sbsize, slocation=slocation, smode=0, sosize=0, tbsize=1, tosize=0, tmode=0))
+        clip            = MergeDiff(DFTTest(low, sbsize=sbsize, slocation=slocation, smode=0, sosize=0, tbsize=1, tosize=0, tmode=0), hif)
         return clip
 
     def genblockmask(self, src):

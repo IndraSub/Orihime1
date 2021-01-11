@@ -45,7 +45,7 @@ class AudioTrim:
             end = wav.getparams().nframes
         params = wav.getparams()
         if start < 0 or end < start or params.nframes < end:
-            raise AudioProcessError('Bad trim parameters')
+            raise AudioProcessError(f'Bad trim parameters: start={start}, end={end}, nframes={params.nframes}')
         self.wav = wav
         self.start = start
         self.end = end

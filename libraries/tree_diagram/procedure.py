@@ -145,6 +145,10 @@ def precheckOutput() -> None:
 
 def precleanTemporaryFiles() -> None:
     writeEventName('Check temporary files')
+    if '+special' in content and 'skip_preclean_temporary_files' in content['+special']:
+        print('Skipping precleanTemporaryFiles due to project configure.')
+        print('NOTE: This is a special behavior, you may want to delete "+special" segment in your project configure.')
+        return
     if not os.path.exists(temporary):
         os.makedirs(temporary)
     directoryFiles = os.listdir(temporary)
@@ -207,6 +211,10 @@ def exportTimecode() -> None:
 def processVideo() -> None:
     output = os.path.join(temporary, 'video-encoded.mp4')
     writeEventName('Process video & Encode')
+    if '+special' in content and 'skip_process_video' in content['+special']:
+        print('Skipping processVideo due to project configure.')
+        print('NOTE: This is a special behavior, you may want to delete "+special" segment in your project configure.')
+        return
     tdinfo = dict(info)
     tdinfo['binaries'] = None # avoid envvar growing too large
     os.environ['TDINFO'] = json.dumps(tdinfo)
@@ -347,9 +355,9 @@ def runMission():
 
 def main() -> None:
     load_missions()
-    precleanTemporaryFiles()
     for idx in range(len(missions['missions'])):
         loadCurrentWorking(idx)
+        precleanTemporaryFiles()
         precheckOutput()
         precheckSubtitle()
         exportTimecode()

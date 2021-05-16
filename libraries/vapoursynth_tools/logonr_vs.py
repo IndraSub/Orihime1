@@ -33,7 +33,7 @@
 ###
 ### Example script clip:
 ### ------------------
-###    core = vs.get_core()
+###    core = vs.core
 ###    import logonr_vs as logonr
 ###    src = core.avisource.AVISource("input.avi")
 ###    dlg = core.delogo.EraseLogo(src, "logofile.lgd")
@@ -41,7 +41,7 @@
 ###
 ### vscore [instance]
 ### ------------------
-###    The VapourSynth core instance created by vs.get_core(), must be the instance which loaded the FFT3DFilter filter.
+###    The VapourSynth core instance created by vs.core, must be the instance which loaded the FFT3DFilter filter.
 ###
 ### dlg [clip]
 ### ------------------
@@ -111,7 +111,7 @@ def throw_config_error(config_name, config_value):
 # The GetPlane function is based on the one by mawen1250, thanks for his work!
 def GetPlane(clip, plane=None):
     # Set core and function name
-    core = vs.get_core()
+    core = vs.core
     funcName = 'GetPlane'
     if not isinstance(clip, vs.VideoNode):
         raise TypeError(funcName + ': \"clip\" must be a clip!')
@@ -132,7 +132,7 @@ def GetPlane(clip, plane=None):
 
 # The Overlay function is based on the one by HolyWu, thanks for his work!
 def Overlay(clipa, clipb, x=0, y=0, mask=None):
-    core = vs.get_core()
+    core = vs.core
     if not (isinstance(clipa, vs.VideoNode)
             and isinstance(clipb, vs.VideoNode)):
         raise TypeError('Overlay: This is not a clip')
@@ -180,7 +180,7 @@ def Overlay(clipa, clipb, x=0, y=0, mask=None):
 
 # The Overlay function is based on the one by HolyWu, thanks for his work!
 def mt_expand_multi(src, mode='rectangle', planes=None, sw=1, sh=1):
-    core = vs.get_core()
+    core = vs.core
     if not isinstance(src, vs.VideoNode):
         raise TypeError('mt_expand_multi: This is not a clip')
 

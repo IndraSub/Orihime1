@@ -94,7 +94,7 @@ def sharpen(clip, mode=1, sstr=2.0, cstr=None, xstr=0.19, lstr=1.49, pstr=1.272,
             clip = finesharp.sharpen(clip)
             ...
     """
-    core = vs.get_core()
+    core = vs.core
 
     bd = clip.format.bits_per_sample
     max_ = 2 ** bd - 1

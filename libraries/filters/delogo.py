@@ -43,7 +43,7 @@ class Delogo:
         auto_dlg = None
         if autodetect:
             auto_dlg = self.auto_delogo(clip, dlg)
-        core = vapoursynth.get_core()
+        core = vapoursynth.core
         def decide(n):
             for start, end in frames:
                 if abs(n - start) < autodetect:
@@ -59,7 +59,7 @@ class Delogo:
         return mvf.Depth(nr, depth=16, fulls=False, dither=3)
 
     def auto_delogo(self, clip, dlg):
-        core = vapoursynth.get_core()
+        core = vapoursynth.core
         clip_c = core.std.Crop(clip, left=self.l, right=self.r, top=self.t, bottom=self.b)
         clip_c = core.fmtc.resample(clip_c, css='444')
         clip_e_a = core.tcanny.TCanny(clip_c, mode=1, sigma=0.5, op=2)

@@ -15,7 +15,7 @@ class FastDeblock:
     def __call__(self, core, clip):
         if clip.format.color_family != vs.YUV:
             raise ConfigureError('FastDeblock: input must be a Gray or YUV clip!')
-        core          = vs.get_core()
+        core          = vs.core
         MakeDiff      = core.std.MakeDiff
         MergeDiff     = core.std.MergeDiff
         MaskedMerge   = core.std.MaskedMerge
@@ -38,7 +38,7 @@ class FastDeblock:
         return clip
 
     def freq_merge(self, low, hi, sbsize, slocation):
-        core            = vs.get_core()
+        core            = vs.core
         DFTTest         = core.dfttest.DFTTest
         MakeDiff        = core.std.MakeDiff
         MergeDiff       = core.std.MergeDiff
@@ -47,7 +47,7 @@ class FastDeblock:
         return clip
 
     def genblockmask(self, src):
-        core            = vs.get_core()
+        core            = vs.core
         Resample        = core.fmtc.resample
         BlankClip       = core.std.BlankClip
         AddBorders      = core.std.AddBorders
@@ -71,7 +71,7 @@ class FastDeblock:
         return clip
 
     def nlmeans(self, src, d, a, s, h, rclip):
-        core            = vs.get_core()
+        core            = vs.core
         Crop            = core.std.CropRel
         KNLMeansCL      = core.knlm.KNLMeansCL
         def duplicate(src):
@@ -92,7 +92,7 @@ class FastDeblock:
         return clip[d:clip.num_frames - d]
 
     def padding(self, src, left, right, top, bottom):
-        core            = vs.get_core()
+        core            = vs.core
         Resample        = core.fmtc.resample
         w               = src.width
         h               = src.height

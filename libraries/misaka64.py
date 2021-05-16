@@ -40,7 +40,8 @@ def main():
     configure = environment['content']
     performance = configure['project']['performance']
 
-    core = vapoursynth.get_core(threads=performance['vs_threads'])
+    core = vapoursynth.core
+    core.num_threads = performance['vs_threads']
     core.max_cache_size = performance['vs_max_cache_size']
 
     load_plugins(core)

@@ -39,7 +39,7 @@ def CSMOD(filtered, **args):
         #    import nnedi3_resample as nnrs
         #    import CSMOD as cs
         #
-        #    core = vs.get_core()
+        #    core = vs.core
         #
         #    def SSMethod(clip):
         #        ss_w = 2    # scale ratio in horizon

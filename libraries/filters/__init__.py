@@ -21,5 +21,5 @@ from .source import LWLibavSource, LSMASHVideoSource, FFmpegSource, AVISource, M
 from .subtitle import VSFilterMod, Subtext, InfoText
 from .trim_frames import TrimFrames
 from .sharpen import FineSharp, CAS
-from .upscale import Waifu2xExpand, Anime4K
+from .upscale import Waifu2xExpandCaffe, Waifu2xExpandNcnn, Anime4K
 from .store import StoreClip, LoadClip

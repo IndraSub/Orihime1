@@ -11,6 +11,8 @@ import importlib.util
 import subprocess
 import json
 
+from .kit import choices, ExitException
+
 logger = logging.getLogger('tree_diagram')
 prechecked = False
 
@@ -97,7 +99,12 @@ def assertModulesInstalled(modules: List[Tuple[str, str]]) -> None:
             not_found.append(module[1])
     if len(not_found) > 0:
         logger.critical(f'Modules not found: {", ".join(not_found)}, install missing modules first')
-        exit(-1)
+        message = 'You can choose Continue to skip installing missing modules at YOUR OWN RISK.'
+        options = ['&Continue', 'E&xit']
+        answer = 1
+        answer = choices(message, options, answer)
+        if answer == 1:
+            raise ExitException()
 
 def findExecutable(filename: str, shorthand=None) -> str:
     filepath = None
@@ -416,7 +423,7 @@ def loadBinCache():
         with open(cachepath, 'r') as f:
             cache = json.loads(f.read())
     else:
-        print('*** Binary cache file not found. Analyzing binary files on site. It may take a while... ***')
+        logger.info('*** Binary cache file not found. Analyzing binary files on site. It may take a while... ***')
     info.binaries = cache.get('binaries', {})
     try:
         for filepath in info.binaries.keys():

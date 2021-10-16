@@ -6,6 +6,10 @@ import os
 from .utils import ConfigureError, SimpleFilter, load_info
 
 @SimpleFilter
+def ChangeFPS(core, clip, _, fps_num, fps_den):
+    return core.std.AssumeFPS(clip, fpsnum=fps_num, fpsden=fps_den)
+
+@SimpleFilter
 def FrameRate(core, clip, _, fps_num, fps_den):
     source_clip = clip
     target_fps_num = fps_num

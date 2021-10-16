@@ -49,14 +49,13 @@ def main():
     clip = None
     for task in make_tasks(configure):
         clip = task(core, clip)
-    print('TreeDiagram [Core] Output clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
+    print('TreeDiagram [Core] Output clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps), file=sys.stderr)
     file = open(os.path.join(environment['temporary'], 'clipinfo.json'), 'w')
     clipinfo = {
         "format": clip.format.name,
         "resolution": [clip.width, clip.height],
         "frames": clip.num_frames,
-        "fps": [clip.fps.numerator, clip.fps.denominator],
-        "flags": clip.flags
+        "fps": [clip.fps.numerator, clip.fps.denominator]
     }
     data = json.dumps(clipinfo)
     file.write(data)

@@ -1,4 +1,4 @@
-from vapoursynth_tools import vsTAAmbk as taa
+from third_party import vsTAAmbk as taa
 
 from .utils import SimpleFilter
 

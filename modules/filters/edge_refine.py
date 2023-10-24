@@ -1,6 +1,6 @@
-from vapoursynth_tools import havsfunc as haf
-from vapoursynth_tools import muvsfunc as muf
-from vapoursynth_tools import mvsfunc as mvf
+from third_party import havsfunc as haf
+from third_party import muvsfunc as muf
+from third_party import mvsfunc as mvf
 
 
 class EdgeRefine:

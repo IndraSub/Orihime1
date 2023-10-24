@@ -1,6 +1,6 @@
 import time
 
-from vapoursynth_tools import mvsfunc as mvf
+from third_party import mvsfunc as mvf
 
 from .utils import SimpleFilter, ConfigureError, get_working_directory, merge_clips
 

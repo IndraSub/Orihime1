@@ -1,6 +1,6 @@
 import vapoursynth as vs
 
-from vapoursynth_tools import mvsfunc as mvf
+from third_party import mvsfunc as mvf
 
 from .utils import ConfigureError
 

@@ -3,8 +3,8 @@ import sys
 
 import vapoursynth
 
-from vapoursynth_tools import mvsfunc as mvf
-from vapoursynth_tools import logonr_vs as logonr
+from third_party import mvsfunc as mvf
+from third_party import logonr_vs as logonr
 
 from .utils import ConfigureError, get_working_directory
 

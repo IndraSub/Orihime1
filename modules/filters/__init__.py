@@ -8,7 +8,7 @@ from .deblock import FastDeblock, OysterDeblock
 from .deinterlace import IT, VIVTC, TIVTC, Yadifmod, Bwdif, QTGMC
 from .delogo import Delogo
 from .denoise import SMDegrain, SMDegrainFast, BM3D, Waifu2xCaffe, Waifu2xW2XC, NLMeans, VagueDenoiser
-from .dering import HQDeringmod, LGhost
+from .dering import FineDehalo, LGhost
 from .edge_refine import EdgeRefine
 from .framerate import ChangeFPS, FrameRate, VFRToCFR
 from .line_clearness import LineClearness

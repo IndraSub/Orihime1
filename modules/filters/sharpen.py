@@ -1,4 +1,4 @@
-from vapoursynth_tools import finesharp as fs
+from third_party import finesharp as fs
 
 from .utils import ConfigureError, SimpleFilter
 

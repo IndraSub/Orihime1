@@ -1,4 +1,4 @@
-from vapoursynth_tools import CSMOD as _CSMOD
+from third_party import CSMOD as _CSMOD
 
 from .utils import ConfigureError, SimpleFilter
 

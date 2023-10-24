@@ -490,6 +490,7 @@ def precheck() -> None:
         ('pefile', 'pefile'),
         ('requests', 'requests'),
         ('jsonpath2', 'jsonpath2'),
+        ('rich', 'rich'),
     ]
     if info.system == 'Windows':
         required_modules += [

@@ -1,4 +1,4 @@
-from vapoursynth_tools import havsfunc as haf
+from third_party import havsfunc as haf
 
 from .utils import ConfigureError, SimpleFilter
 

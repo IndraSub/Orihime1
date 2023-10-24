@@ -3,7 +3,7 @@ import os
 import sys
 import vapoursynth
 
-sys.path.append(".")
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # pylint: disable=wrong-import-position
 from filters.plugins import load_plugins

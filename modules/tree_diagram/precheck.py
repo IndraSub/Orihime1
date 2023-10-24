@@ -11,7 +11,7 @@ import importlib.util
 import subprocess
 import json
 
-from .kit import choices, ExitException
+from .kit import writeEventName, choices
 
 logger = logging.getLogger('tree_diagram')
 prechecked = False
@@ -20,6 +20,14 @@ class Info(dict):
     def __init__(self, *args, **kwargs):
         super(Info, self).__init__(*args, **kwargs)
         self.__dict__ = self
+        self.binaries = {}
+        self.node = None
+        self.system = None
+        self.system_version = None
+        self.root_directory = None
+        self.PYTHON = None
+        self.vsfilters = []
+        self.avsfilters = []
 
 info = Info()
 
@@ -36,11 +44,11 @@ def addLibPath(path: str) -> None:
             os.environ['LD_LIBRARY_PATH'] = path
         else:
             os.environ['LD_LIBRARY_PATH'] = path + os.pathsep + os.environ['LD_LIBRARY_PATH']
-        winpath = subprocess.check_output([info.WINEPATH, '-w', path]).decode().strip()
+        winepath = subprocess.check_output([info.WINEPATH, '-w', path]).decode().strip()
         if 'WINEPATH' not in os.environ:
-            os.environ['WINEPATH'] = path
+            os.environ['WINEPATH'] = winepath
         else:
-            os.environ['WINEPATH'] = path + ';' + os.environ['WINEPATH']
+            os.environ['WINEPATH'] = winepath + ';' + os.environ['WINEPATH']
 
 def addPythonPath(path: str) -> None: # This one is appended after the current path
     if not os.path.exists(path):
@@ -53,24 +61,24 @@ def addPythonPath(path: str) -> None: # This one is appended after the current p
 
 def checkSystem() -> None:
     plat_info = platform.uname()
-    logger.info('PYTHON VERSION: {}'.format(sys.version.replace('\n', '')))
-    logger.info(f'PYTHON EXECUTABLE: {sys.executable}')
-    logger.info(f'NODE: {plat_info.node}')
-    logger.info(f'SYSTEM: {plat_info.system}')
+    logger.info('PYTHON VERSION: %s', sys.version.replace('\n', ''))
+    logger.info('PYTHON EXECUTABLE: %s', sys.executable)
+    logger.info('NODE: %s', plat_info.node)
+    logger.info('SYSTEM: %s', plat_info.system)
     if plat_info.system == 'Windows':
         release = plat_info.version
     else:
         release = plat_info.release
-    logger.info(f'RELEASE: {release}')
-    logger.info(f'MACHINE: {plat_info.machine}')
+    logger.info('RELEASE: %s', release)
+    logger.info('MACHINE: %s', plat_info.machine)
 
     default_encoding = sys.getdefaultencoding()
-    logger.info(f'ENCODING: {default_encoding}')
+    logger.info('ENCODING: %s', default_encoding)
 
     passed = True
-    if sys.version_info < (3, 6) or sys.version_info > (3, 10):
-        logger.error('Python version should be 3.6, 3.7, 3.8 or 3.9')
-        passed = False
+    #if sys.version_info < (3, 6) or sys.version_info > (3, 10):
+    #    logger.error('Python version should be 3.6, 3.7, 3.8 or 3.9')
+    #    passed = False
     if plat_info.system not in ['Windows', 'Linux']:
         logger.error('Unsupported operating system, supported: Windows, Linux')
         passed = False
@@ -81,7 +89,7 @@ def checkSystem() -> None:
         logger.error('Unsupported encoding, supported: utf-8')
         passed = False
     if not passed:
-        exit(-1)
+        sys.exit(-1)
     info.node = plat_info.node
     info.system = plat_info.system
     info.system_version = release
@@ -104,7 +112,7 @@ def assertModulesInstalled(modules: List[Tuple[str, str]]) -> None:
         answer = 1
         answer = choices(message, options, answer)
         if answer == 1:
-            raise ExitException()
+            sys.exit(-1)
 
 def findExecutable(filename: str, shorthand=None) -> str:
     filepath = None
@@ -152,8 +160,9 @@ def loadBinaryInfo(filename: str):
             fileformat = 'unknown'
     fileinfo['fileformat'] = fileformat
     if fileformat == 'ELF':
+        # pylint: disable=import-error
+        # pylint: disable=import-outside-toplevel
         from elftools.elf.elffile import ELFFile
-        from elftools.elf.dynamic import DynamicSection
         with open(filename, 'rb') as f:
             elf = ELFFile(f)
             if elf.header.e_type == 'ET_EXEC':
@@ -190,6 +199,8 @@ def loadBinaryInfo(filename: str):
                         exports.append(symbol.name)
             fileinfo['exports'] = exports
     elif fileformat == 'PE':
+        # pylint: disable=import-error
+        # pylint: disable=import-outside-toplevel
         from pefile import PE
         pe = PE(filename, fast_load=True)
         try:
@@ -350,18 +361,18 @@ def checkExecutables(executables: List[ExecDescription]) -> None:
         elif filepath is not None:
             depinfo = queryDependency(filepath)
             if depinfo:
-                logger.warn(filepath + ':')
+                logger.warning('%s:', filepath)
                 for l in depinfo:
-                    logger.warn(f'    {l}')
+                    logger.warning('    %s', l)
     if len(not_found) > 0:
-        logger.critical(f'Executables not found: {", ".join(not_found)}')
-        exit(-1)
+        logger.critical('Executables not found: %s', ', '.join(not_found))
+        sys.exit(-1)
 
 def findVSPlugins() -> List[str]:
     result = []
-    plugin_dir = os.path.join(info.root_directory, 'bin', info.system.lower(), 'filter_plugins', 'vs')
-    init_names = {'VapourSynthPluginInit', '_VapourSynthPluginInit@12'}
-    for root, dirs, files in os.walk(plugin_dir):
+    plugin_dir = os.path.join(info.root_directory, 'binaries', info.system.lower(), 'filter_plugins', 'vs')
+    init_names = {'VapourSynthPluginInit', 'VapourSynthPluginInit2', '_VapourSynthPluginInit@12', '_VapourSynthPluginInit2@8'}
+    for root, _, files in os.walk(plugin_dir):
         for name in files:
             path = os.path.join(root, name)
             if path.lower().endswith('.dll') or (info.system == 'Linux' and path.endswith('.so')):
@@ -380,19 +391,19 @@ def findVSPlugins() -> List[str]:
                     result.append(path)
                     depinfo = queryDependency(path)
                     if depinfo:
-                        logger.warn(path + ':')
+                        logger.warning('%s:', path)
                         for l in depinfo:
-                            logger.warn(f'    {l}')
+                            logger.warning('    %s', l)
     return result
 
 def findAVSPlugins() -> List[str]:
     result = []
-    plugin_dir = os.path.join(info.root_directory, 'bin', info.system.lower(), 'filter_plugins', 'avs')
+    plugin_dir = os.path.join(info.root_directory, 'binaries', info.system.lower(), 'filter_plugins', 'avs')
     init_names = {
         'AvisynthPluginInit3', '_AvisynthPluginInit3@8',
         'AvisynthPluginInit2', '_AvisynthPluginInit2@4',
     }
-    for root, dirs, files in os.walk(plugin_dir):
+    for root, _, files in os.walk(plugin_dir):
         for name in files:
             path = os.path.join(root, name)
             if path.lower().endswith('.dll') or (info.system == 'Linux' and path.endswith('.so')):
@@ -411,16 +422,16 @@ def findAVSPlugins() -> List[str]:
                     result.append(path)
                     depinfo = queryDependency(path)
                     if depinfo:
-                        logger.warn(path + ':')
+                        logger.warning('%s:', path)
                         for l in depinfo:
-                            logger.warn(f'    {l}')
+                            logger.warning('    %s', l)
     return result
 
 def loadBinCache():
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')
     cache = {}
     if os.path.exists(cachepath):
-        with open(cachepath, 'r') as f:
+        with open(cachepath, 'r', encoding='utf-8') as f:
             cache = json.loads(f.read())
     else:
         logger.info('*** Binary cache file not found. Analyzing binary files on site. It may take a while... ***')
@@ -435,12 +446,12 @@ def loadBinCache():
                 del info.binaries[filepath]
                 continue
     except RuntimeError:
-        logger.error(f'*** Outdated binary cache file, please delete bin_cache.json manually. ***')
-        exit(-1)
+        logger.error('*** Outdated binary cache file, please delete bin_cache.json manually, then re-run this script. ***')
+        sys.exit(-1)
 
 def saveBinCache():
     cachepath = os.path.join(info.root_directory, 'bin_cache.json')
-    with open(cachepath, 'w') as f:
+    with open(cachepath, 'w', encoding='utf-8') as f:
         f.write(json.dumps({
             'binaries': info.binaries,
         }))
@@ -451,6 +462,8 @@ def precheck() -> None:
     if prechecked:
         return
 
+    writeEventName('Environment Check')
+    
     if 'TDDEBUG' in os.environ and os.environ['TDDEBUG'] == '1':
         logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     else:
@@ -463,10 +476,9 @@ def precheck() -> None:
     if info.system == 'Linux':
         checkExecutables([('wine', True), ('winepath', True)])
 
-    addPath(os.path.join(info.root_directory, 'bin', info.system.lower()))
-    addLibPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib'))
-    addPythonPath(os.path.join(info.root_directory, 'bin', info.system.lower(), 'lib', 'python'))
-    addPythonPath(os.path.join(info.root_directory, 'libraries'))
+    addPath(os.path.join(info.root_directory, 'binaries', info.system.lower()))
+    addLibPath(os.path.join(info.root_directory, 'binaries', info.system.lower(), 'libraries'))
+    addPythonPath(os.path.join(info.root_directory, 'modules'))
 
     if info.system == 'Windows':
         windir = os.environ['WINDIR']
@@ -498,18 +510,19 @@ def precheck() -> None:
             ('mkvmerge.exe', True),
             ('mkvpropedit.exe', True),
             ('mp4fpsmod.exe', True),
+            ('qaac64.exe', True, 'qaac'),
             ('x264.exe', False, 'x264'),
-            ('x264_tmod.exe', False, 'x264_tmod'),
-            ('x264_7mod-8bit.exe', False, 'x264_7mod'),
-            ('x264_7mod-10bit.exe', False, 'x264_7mod_10bit'),
+            ('x264-7mod.exe', False, 'x264_7mod'),
+            ('x264-7mod-10bit.exe', False, 'x264_7mod_10bit'),
+            ('x264-tmod.exe', False, 'x264_tmod'),
+            ('x264-yuuki.exe', False, 'x264_yuuki'),
             ('x265.exe', False, 'x265'),
-            ('x265-asuna-8bit.exe', False, 'x265_asuna'),
+            ('x265-asuna.exe', False, 'x265_asuna'),
             ('x265-asuna-10bit.exe', False, 'x265_asuna_10bit'),
             ('x265-asuna-full.exe', False, 'x265_asuna_full'),
-            ('x265-yuuki-8bit.exe', False, 'x265_yuuki'),
+            ('x265-yuuki.exe', False, 'x265_yuuki'),
             ('x265-yuuki-10bit.exe', False, 'x265_yuuki_10bit'),
             ('x265-yuuki-full.exe', False, 'x265_yuuki_full'),
-            ('qaac.exe', True),
         ]
     else:
         executables = [
@@ -519,14 +532,17 @@ def precheck() -> None:
             ('mkvmerge', True),
             ('mkvpropedit', True),
             ('mp4fpsmod', True),
-            ('x264', False),
-            ('x264_7mod', False),
-            ('x264_7mod-10bit', False),
-            ('x265', False),
-            ('x265_yuuki', False),
-            ('x265_yuuki-10bit', False),
             ('qaac', True),
             ('fc-match', True), # fontconfig
+            ('x264', False),
+            ('x264-7mod', False),
+            ('x264-7mod-10bit', False),
+            ('x264-tmod', False),
+            ('x265', False),
+            ('x265-asuna', False),
+            ('x265-asuna-10bit', False),
+            ('x265-yuuki', False),
+            ('x265-yuuki-10bit', False),
         ]
     checkExecutables(executables)
 

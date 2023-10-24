@@ -7,11 +7,11 @@ import os
 from . import info
 from .kit import assertFileWithExit
 from .process_utils import invokePipeline
-from .audio_filters import AudioWavSource, AudioAiffSource, AudioConcat, AudioTrim, AudioOutput, Silence, \
+from .audio_filters import AudioAiffSource, AudioConcat, AudioTrim, AudioOutput, Silence, \
     wave_params
 
 def getSourceInfo(source: str) -> int:
-    xmlstr = subprocess.run([info.MEDIAINFO, '--Output=XML', source], stdout=subprocess.PIPE).stdout.decode('utf8')
+    xmlstr = subprocess.run([info.MEDIAINFO, '--Output=XML', source], stdout=subprocess.PIPE, check=True).stdout.decode('utf8')
     xml = ET.fromstring(xmlstr)
     vdelay = None
     adelay = None
@@ -36,28 +36,28 @@ def getSourceInfo(source: str) -> int:
             if d is not None:
                 adelay = float(d.text)
     if vdelay is None:
-        print('TreeDiagram [Audio Utils] No video delay in stream meta, assume it to 0.')
+        print('AudioUtils: No video delay in stream meta, assume it to 0.')
         vdelay = 0
     if adelay is None:
-        print('TreeDiagram [Audio Utils] No audio delay in stream meta, assume it to 0.')
+        print('AudioUtils: No audio delay in stream meta, assume it to 0.')
         adelay = 0
     if 'audio_delay' in info.content['source']:
-        print('TreeDiagram [Audio Utils] Using audio delay in project configure.')
+        print('AudioUtils: Using audio delay in project configure.')
         delay = info.content['source']['audio_delay']
     else:
         delay = int((adelay - vdelay) * 1000)
-    print(f'TreeDiagram [Audio Utils] Audio delay related to video: {delay} ms')
+    print(f'AudioUtils: Audio delay related to video: {delay} ms')
     return delay
 
 def extractAudio(source: str, extractedAudio: str) -> None:
-    print('TreeDiagram [Audio Utils] Extracting audio data, this may take a while on long videos...')
+    print('AudioUtils: Extracting audio data, this may take a while on long videos / audios...')
     invokePipeline([
         [info.FFMPEG, '-hide_banner', '-i', source, '-vn', '-acodec', 'pcm_s16be', '-f', 'aiff', extractedAudio]
     ])
     assertFileWithExit(extractedAudio)
 
 def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
-    print('TreeDiagram [Audio Utils] Encoding audio data to AAC format with QAAC')
+    print('AudioUtils: Encoding audio data to AAC format with QAAC')
     invokePipeline([
         [info.FFMPEG, '-hide_banner', '-i', trimmedAudio, '-f', 'wav', '-vn', '-'],
         [info.QAAC, '--tvbr', '127', '--quality', '2', '--ignorelength', '-o', encodedAudio, '-'],
@@ -66,9 +66,9 @@ def encodeAudio(trimmedAudio: str, encodedAudio: str) -> None:
 
 def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, fps: list, frames=None) -> None:
     fps = fps[0] / fps[1]
-    print(f'TreeDiagram [Audio Utils] Video stream framerate: {fps} fps')
+    print(f'AudioUtils: Video stream framerate: {fps} fps')
     delay = getSourceInfo(source)
-    print('TreeDiagram [Audio Utils] Trimming wave file...')
+    print('AudioUtils: Trimming wave file...')
     src = AudioAiffSource(extractedAudio)
     params = src.getparams()
     out = None
@@ -88,7 +88,7 @@ def trimAudio(source: str, extractedAudio: str, trimmedAudio: str, fps: list, fr
             out = AudioTrim(src, -delay_samp)
     out = AudioOutput(out, trimmedAudio, format='wav')
     nchannels, sampwidth, framerate, nframes, comptype, compname = out.getparams()
-    print(f'TreeDiagram [Audio Utils] Audio output: {nchannels} channel(s), {framerate} Hz, {nframes} frames, {nframes / framerate :.3f} s')
+    print(f'AudioUtils: Audio output: {nchannels} channel(s), {framerate} Hz, {nframes} frames, {nframes / framerate :.3f} s')
     out.run()
     assertFileWithExit(trimmedAudio)
 

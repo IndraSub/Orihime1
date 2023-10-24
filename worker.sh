@@ -5,5 +5,5 @@ echo -ne '\033]2;INDRA Rip Tools\007'
 script="$(readlink -f "$0")"
 rootdir="$(dirname "$script")"
 cd "$rootdir"
-python3.6 -m libraries.worker
+python3.6 -m modules.worker
 sleep 1

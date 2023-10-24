@@ -1,40 +1,40 @@
-import base64
 import json
 import os
 import sys
-import time
-import json
-
 import vapoursynth
 
+sys.path.append(".")
+
+# pylint: disable=wrong-import-position
+from filters.plugins import load_plugins
+from filters.utils import load_info
 from filters.utils import ConfigureError
 
 def make_tasks(configure):
+    # pylint: disable=import-outside-toplevel
     import filters
 
     flow = configure['project']['flow']
     tasks = []
     for step in flow:
-        if type(step) is str:
+        if isinstance(step, str):
             step = {step: {}}
         if len(step) != 1:
-            raise ConfigureError('Process Flow: Less/More than one config in a single step, forget \'-\' ?')
+            raise ConfigureError('Core: Less/More than one config in a single step, forgot \'-\' ?')
         filter_name = list(step)[0]
         if not hasattr(filters, filter_name):
-            raise ConfigureError('Process Flow: Filter \'{}\' not found'.format(filter_name))
+            raise ConfigureError(f'Core: Filter {filter_name} not found')
         filter_conf = step[filter_name]
-        print(f'TreeDiagram [Process Flow] Add External filter: {filter_name}', file=sys.stderr)
-        if type(filter_conf) is list:
+        print(f'Core: Add External filter: {filter_name}', file=sys.stderr)
+        if isinstance(filter_conf, list):
             tasks.append(getattr(filters, filter_name)(configure, *filter_conf))
-        elif type(filter_conf) is dict:
+        elif isinstance(filter_conf, dict):
             tasks.append(getattr(filters, filter_name)(configure, **filter_conf))
         else:
             tasks.append(getattr(filters, filter_name)(configure, filter_conf))
     return tasks
 
 def main():
-    from filters.utils import load_info
-    from filters.plugins import load_plugins
 
     environment = load_info()
     configure = environment['content']
@@ -49,8 +49,8 @@ def main():
     clip = None
     for task in make_tasks(configure):
         clip = task(core, clip)
-    print('TreeDiagram [Core] Output clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps), file=sys.stderr)
-    file = open(os.path.join(environment['temporary'], 'clipinfo.json'), 'w')
+    print('Core: Output clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps), file=sys.stderr)
+    file = open(os.path.join(environment['temporary'], 'clipinfo.json'), 'w', encoding='utf-8')
     clipinfo = {
         "format": clip.format.name,
         "resolution": [clip.width, clip.height],

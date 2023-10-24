@@ -33,10 +33,13 @@ def checkFontLinux(fontname: str) -> bool:
     return False
 
 def checkFontWindows(fontname: str) -> bool:
-    import clr # pylint: disable=unused-import
+    # pylint: disable=unused-import
+    # pylint: disable=import-outside-toplevel
+    import clr
     from System import Drawing
     try:
         Drawing.FontFamily(fontname)
+    # pylint: disable=bare-except
     except:
         return False
     return True

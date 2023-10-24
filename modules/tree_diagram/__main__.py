@@ -10,4 +10,4 @@ try:
     else:
         tree_diagram.main()
 except tree_diagram.ExitException as e:
-    exit(e.code)
+    sys.exit(e.code)

@@ -2,8 +2,8 @@
 
 import os
 
-import libraries.tree_diagram as tree_diagram
-from libraries.tree_diagram import info
+import modules.tree_diagram as tree_diagram
+from modules.tree_diagram import info
 
 from .worker import Worker
 

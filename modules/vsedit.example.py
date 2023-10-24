@@ -55,7 +55,7 @@ def make_tasks(configure):
         if not hasattr(filters, filter_name):
             raise ConfigureError('Process Flow: Filter \'{}\' not found'.format(filter_name))
         filter_conf = step[filter_name]
-        print(f'TreeDiagram [Process Flow] Add filter: {filter_name}', file=sys.stderr)
+        print(f'[Misaka64|Flow] Add filter: {filter_name}', file=sys.stderr)
         if type(filter_conf) is list:
             tasks.append(getattr(filters, filter_name)(configure, *filter_conf))
         elif type(filter_conf) is dict:
@@ -78,7 +78,7 @@ def main():
     clip = None
     for task in make_tasks(configure):
         clip = task(core, clip)
-    print('TreeDiagram [Core] Output clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
+    print('[Misaka64|Core] Output clip info: format:'+clip.format.name+' width:'+str(clip.width)+' height:'+str(clip.height)+' num_frames:'+str(clip.num_frames)+' fps:'+str(clip.fps)+' flags:'+str(clip.flags), file=sys.stderr)
     video = core.resize.Point(clip, matrix_in_s="709")
     video.set_output()
 

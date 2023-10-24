@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-from typing import List, Tuple
 import os
 import sys
 import shutil
-import io
 import logging
 import time
 import json
@@ -53,7 +51,11 @@ def load_missions():
 def parseContentV1(content: dict) -> dict:
     with open(os.path.join(working_directory, content['project']), encoding='utf8') as f:
         descriptions = yaml.safe_load_all(f)
-        content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
+        try:
+            content['project'] = next(project for project in descriptions if project['quality'] == content['quality'])
+        except StopIteration:
+            logger.critical(f'Quality "{content["quality"]}" in episode "{content["episode"]}" has no match in project configuration "{content["project"]}".')
+            raise ExitException(-1)
 
     # replacements
     content['title'] = content['title'].format(**content)
@@ -126,7 +128,7 @@ def missionReport() -> None:
 
     if info.report_endpoint is not None:
         report = f'[{info.node}] Mission Start: {content["title"]}'
-        requests.post(info.report_endpoint, report.encode('utf-8'))
+        requests.post(info.report_endpoint, report.encode('utf-8'), timeout=30)
 
 def precheckOutput() -> None:
     writeEventName('Check output file')
@@ -175,7 +177,7 @@ def precheckSubtitle() -> None:
     subtitle = os.path.join(working_directory, content['source']['subtitle']['filename'])
     with open(subtitle, 'rb') as f:
         if f.read(2) != b'\xef\xbb':
-            message = 'The SSA file has no BOM, continue?'
+            message = 'The SSA file has no BOM header, continue?'
             options = ['&Continue', 'E&xit']
             answer = 1
             if not info.autorun:
@@ -204,7 +206,7 @@ def exportTimecode() -> None:
     writeEventName('Export Timecodes')
     source = os.path.join(working_directory, content['source']['filename'])
     if not source.endswith('.mp4'):
-        logger.critical(f'Exporting timecodes currently only supports MP4 source file.')
+        logger.critical('Exporting timecodes currently only supports MP4 source file.')
         raise ExitException(-1)
     exportTimecodeMP4(source=source, exportedTimecode=os.path.join(temporary, 'timecode.txt'))
 
@@ -220,11 +222,15 @@ def processVideo() -> None:
     os.environ['TDINFO'] = json.dumps(tdinfo)
     os.environ['DISPLAY'] = '' # workaround to avoid usage of X
     vapoursynth_pipeline = [
-        '--y4m',
-        os.path.join(info.root_directory, 'libraries', 'misaka64.py'),
+        '-c',
+        'y4m',
+        os.path.join(info.root_directory, 'modules', 'misaka64.py'),
         '-',
     ]
     encoder = content['project']['encoder']
+    if encoder.upper() not in info:
+        logger.critical(f'Encoder {encoder} is not supported. See Environment Check output for supported encoder executables.')
+        raise ExitException(-1)
     encoder_binary = info[encoder.upper()]
     encoder_params = content['project']['encoder_params'].split()
     if encoder.lower().startswith('x264'):
@@ -236,7 +242,7 @@ def processVideo() -> None:
     elif encoder.lower().startswith('svtav1'):
         encoder_params = ['-i', 'stdin'] + encoder_params + ['-b', os.path.join(temporary, 'video-encoded.ivf')]
     else:
-        print(f"Encoder {encoder} is not supported.")
+        logger.critical(f"Encoder {encoder} is not supported.")
         raise ExitException(-1)
     invokePipeline([
         [info.VSPIPE] + vapoursynth_pipeline, True,
@@ -248,17 +254,19 @@ def processAudio() -> None:
     if (content['source']['split']): # splitted audio & video source
         source = os.path.join(working_directory, content['source']['audio'])
         extractedAudio = os.path.join(temporary, 'audio-extracted.wav')
+        trimmedAudio = os.path.join(temporary, 'audio-trimmed.wav')
         encodedAudio = os.path.join(temporary, 'audio-encoded.m4a')
         clipInfo = os.path.join(temporary, 'clipinfo.json')
 
         trim_frames = None
-        if any(f == 'TrimFrames' or (type(f) is dict and list(f.keys())[0] == 'TrimFrames')
+        if any(f == 'TrimFrames' or (isinstance(f, dict) and list(f.keys())[0] == 'TrimFrames')
                for f in content['project']['flow']):  # has TrimFrames
             trim_frames = content['source']['trim_frames']
         writeEventName('Process audio & Encode')
+        with open(clipInfo, 'r', encoding='utf-8') as clipInfoFile:
+            clipInfo = json.loads(clipInfoFile.read())
         extractAudio(source, extractedAudio)
-        clipInfoFile = open(clipInfo)
-        clipInfo = json.loads(clipInfoFile.read())
+        trimAudio(source, extractedAudio, trimmedAudio, clipInfo['fps'], trim_frames)
         encodeAudio(extractedAudio, encodedAudio)
         assertFileWithExit(encodedAudio)
 
@@ -280,14 +288,14 @@ def processAudio() -> None:
             idx = 0
             for filename in content['source']['filenames']:
                 source = os.path.join(working_directory, filename)
-                print(f'TreeDiagram [Multi Source] Preparing {filename}...')
+                print(f'MultiSource: Preparing {filename}...')
                 extractAudio(source, os.path.join(temporary, f'{idx}.aif'))
                 idx += 1
             mergeAndTrimAudio(idx, trimmedAudio, trim_frames)
         else: # single source
             extractAudio(source, extractedAudio)
-            clipInfoFile = open(clipInfo)
-            clipInfo = json.loads(clipInfoFile.read())
+            with open(clipInfo, 'r', encoding='utf-8') as clipInfoFile:
+                clipInfo = json.loads(clipInfoFile.read())
             trimAudio(source, extractedAudio, trimmedAudio, clipInfo['fps'], trim_frames)
 
         encodeAudio(trimmedAudio, encodedAudio)
@@ -331,7 +339,7 @@ def missionComplete():
     invokePipeline([[info.MEDIAINFO, output]])
     if info.report_endpoint is not None:
         report = f'[{info.node}] Mission Complete: {content["title"]}'
-        requests.post(info.report_endpoint, report.encode('utf-8'))
+        requests.post(info.report_endpoint, report.encode('utf-8'), timeout=30)
 
 def syncContent():
     global content
@@ -349,7 +357,7 @@ def runMission():
     except Exception as e:
         if info.report_endpoint is not None:
             report = f'[{info.node}] Mission Failed With Exception: {e}'
-            requests.post(info.report_endpoint, report.encode('utf-8'))
+            requests.post(info.report_endpoint, report.encode('utf-8'), timeout=30)
         raise
     missionComplete()
 
@@ -371,7 +379,7 @@ def genVseditFile() -> None:
     tdinfo = dict(info)
     tdinfo['binaries'] = None # avoid envvar growing too large
     tdinfoJson = json.dumps(tdinfo)
-    with open(outputScript, 'w') as f:
+    with open(outputScript, 'w', encoding='utf-8') as f:
         f.write(f'''\
 import os
 import sys
@@ -381,8 +389,8 @@ os.environ['PATH'] = {repr(os.environ['PATH'])}
 ''')
         if sys.platform == 'linux':
             f.write(f'''os.environ['LD_LIBRARY_PATH'] = {repr(os.environ['LD_LIBRARY_PATH'])}\n''')
-        f.write(f'''from misaka64 import main\n''')
-        f.write(f'''main()\n''')
+        f.write('''from misaka64 import main\n''')
+        f.write('''main()\n''')
     assertFileWithExit(outputScript)
     print(f'Generated script file: {outputScript}')
 

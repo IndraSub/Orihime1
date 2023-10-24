@@ -31,7 +31,7 @@ class Delogo:
     def __call__(self, core, clip):
         for frames in self.frames:
             start, end = frames
-            print('TreeDiagram [Delogo] Frames to be processed: '+str(start)+'-'+str(end), file=sys.stderr)
+            print('Delogo: Frames to be processed: '+str(start)+'-'+str(end), file=sys.stderr)
         dlg = core.delogo.EraseLogo(
             clip,
             self.logo_file,

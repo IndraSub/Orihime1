@@ -1,10 +1,11 @@
 venv
-bin/**
+binaries/**
 episodes
+tools/**
 **/__pycache__
 cudnn_data/
 bin_cache.json
-libraries/vsedit.py
+modules/vsedit.py
 worker_config.yaml
 .idea
 .vscode

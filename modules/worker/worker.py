@@ -11,8 +11,8 @@ import traceback
 import yaml
 import requests
 
-import libraries.tree_diagram as tree_diagram
-from libraries.tree_diagram import info, ExitException, syncContent
+import modules.tree_diagram as tree_diagram
+from modules.tree_diagram import info, ExitException, syncContent
 
 logger = logging.getLogger('tree_diagram:worker')
 

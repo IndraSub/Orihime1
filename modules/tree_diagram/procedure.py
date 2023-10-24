@@ -251,6 +251,11 @@ def processVideo() -> None:
     assertFileWithExit(output)
 
 def processAudio() -> None:
+    writeEventName('Process audio & Encode')
+    if '+special' in content and 'skip_process_audio' in content['+special']:
+        print('Skipping processAudio due to project configure.')
+        print('NOTE: This is a special behavior, you may want to delete "+special" segment in your project configure.')
+        return
     if (content['source']['split']): # splitted audio & video source
         source = os.path.join(working_directory, content['source']['audio'])
         extractedAudio = os.path.join(temporary, 'audio-extracted.wav')
@@ -262,7 +267,6 @@ def processAudio() -> None:
         if any(f == 'TrimFrames' or (isinstance(f, dict) and list(f.keys())[0] == 'TrimFrames')
                for f in content['project']['flow']):  # has TrimFrames
             trim_frames = content['source']['trim_frames']
-        writeEventName('Process audio & Encode')
         with open(clipInfo, 'r', encoding='utf-8') as clipInfoFile:
             clipInfo = json.loads(clipInfoFile.read())
         extractAudio(source, extractedAudio)
@@ -281,7 +285,6 @@ def processAudio() -> None:
         if any(f == 'TrimFrames' or (type(f) is dict and list(f.keys())[0] == 'TrimFrames')
                for f in content['project']['flow']): # has TrimFrames
             trim_frames = content['source']['trim_frames']
-        writeEventName('Process audio & Encode')
 
         if any(f == 'MultiSource' or (type(f) is dict and list(f.keys())[0] == 'MultiSource')
                for f in content['project']['flow']): # has MultiSource
